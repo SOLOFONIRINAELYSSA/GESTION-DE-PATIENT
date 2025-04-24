@@ -7,7 +7,7 @@ const ListPatient = () => {
     <div>
         <SidBar />
         <ContainerListsAppartement />
-<section id="content">
+        <section id="content">
           <footer className="footer">
               <div className="footer-text">
                   <p>&copy; 2025 G-PATIENT | tous Droits Réservés.</p>

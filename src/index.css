@@ -82,6 +82,9 @@
 }
 
 @media (max-width: 576px){
+    .footer-text p{
+        margin-left: 0;
+    }
     header .logo span{
         display: none !important;
     }

@@ -30,6 +30,10 @@ const ListPatient = () => {
               <h3>Dernières Patients</h3>
               <i className='bx bx-search icon-tbl'></i>
               <i className='bx bx-filter icon-tbl'></i>
+              {/* <a href="#" className="notification">
+                <i className="bx bxs-bell"></i>
+                <span className="num">0</span>
+             </a> */}
             </div>
             <table>
               <thead className="thead">
