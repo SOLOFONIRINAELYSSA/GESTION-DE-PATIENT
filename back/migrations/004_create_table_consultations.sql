@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS consultations (
+    idConsult INT AUTO_INCREMENT PRIMARY KEY,
+    idRdv INT NOT NULL,
+    dateConsult DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    compteRendu TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_consult_rdv 
+        FOREIGN KEY (idRdv) REFERENCES rendezVous(idRdv)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX idx_date_consult (dateConsult)
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
