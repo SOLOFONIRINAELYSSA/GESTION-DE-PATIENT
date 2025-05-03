@@ -1,18 +1,26 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4040/api";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4040/api";
 axios.defaults.baseURL = API_BASE_URL;
 
-export interface RendezVous {
+ export interface RendezVous {
   idRdv?: number;
   cinPatient: string;
   cinPraticien: string;
   dateHeure: string;
-  statut?: 'en_attente' | 'confirme' | 'annule';
-  nomPraticien?: string;
-  idRdvParent?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  prenomPraticien?: string;
+  idRdvParent: string | null; // Soit string, soit null, mais pas undefined
+  statut: 'en_attente' | 'confirme' | 'annule';
+  hasConsultation?: boolean;
+  patientInfo?: {
+    nom: string;
+    prenom: string;
+  };
+  praticienInfo?: {
+    nom: string;
+    prenom: string;
+    specialite?: string;
+  };
 }
 
 export async function createRendezVous(data: RendezVous): Promise<RendezVous> {
@@ -59,6 +67,7 @@ export async function createRendezVous(data: RendezVous): Promise<RendezVous> {
 export async function getAllRendezVous(): Promise<RendezVous[]> {
   try {
     const response = await axios.get<{
+
       success: boolean;
       count: number;
       data: RendezVous[];
@@ -163,3 +172,10 @@ export async function updateRendezVousStatus(
     throw new Error("Erreur inconnue lors du changement de statut");
   }
 }
+
+// Dans votre service rendezVous_api.ts
+export const getAllAvailableRendezVous = async (): Promise<RendezVous[]> => {
+  const response = await axios.get(`${API_BASE_URL}/available`);
+  return response.data;
+};
+

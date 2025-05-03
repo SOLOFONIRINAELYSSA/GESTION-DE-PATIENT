@@ -2,52 +2,55 @@ import { useEffect, useState } from 'react';
 import '../SidBarNavBar/SidBar.css';
 import Profil from '../../assets/images/a1.png';
 import Logo from '../../assets/images/Logo.png';
+import axios from 'axios';
 // import Notification from '../Container/ContainerRendezVous/notification';
-// import { getAllRendezVous } from '../../services/rendezVous_api';
+import { RendezVous, API_BASE_URL } from '../../services/rendezVous_api';
 
 const SidBar = () => {
-// *****************************
-// const [unseenCount, setUnseenCount] = useState(0);
-//   const [lastReset, setLastReset] = useState(new Date());
 
-//   // Fonction pour charger et comparer les rendez-vous
-//   const fetchAndCompareAppointments = async () => {
-//     try {
-//       const appointments = await getAllRendezVous();
-      
-//       // Compter les rendez-vous créés après le dernier reset
-//       const newAppointments = appointments.filter(appt => {
-//         if (!appt.created_at) return false;
-//         return new Date(appt.created_at) > lastReset;
-//       });
-      
-//       setUnseenCount(newAppointments.length);
-//     } catch (error) {
-//       console.error("Erreur de chargement:", error);
-//     }
-//   };
-
-//   // Chargement initial
-//   useEffect(() => {
-//     fetchAndCompareAppointments();
-//   }, [lastReset]);
-
-//   // Réinitialiser au clic
-//   const handleClick = () => {
-//     setLastReset(new Date());
-//     setUnseenCount(0);
-//   };
-
-
-
-  // ************************************
   const [sidebarHidden, setSidebarHidden] = useState(
     localStorage.getItem('sidebarHidden') === 'true' || window.innerWidth < 768
   );
   const [darkTheme, setDarkTheme] = useState(localStorage.getItem('theme') === 'dark');
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState(localStorage.getItem('activeMenu') || 'Dashboard');
+// ***************************
 
+const [notificationCount, setNotificationCount] = useState(0);
+const [lastChecked, setLastChecked] = useState(new Date());
+
+// Fonction pour récupérer les nouveaux rendez-vous
+const fetchNewRendezVous = async () => {
+  try {
+    const response = await axios.get<RendezVous[]>(`${API_BASE_URL}/new?since=${lastChecked.toISOString()}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des nouveaux rendez-vous:", error);
+    return [];
+  }
+};
+
+// Vérifie les nouveaux rendez-vous périodiquement
+useEffect(() => {
+  const checkForNewRendezVous = async () => {
+    const newRendezVous = await fetchNewRendezVous();
+    if (newRendezVous.length > 0) {
+      setNotificationCount(prev => prev + newRendezVous.length);
+    }
+  };
+
+  const interval = setInterval(checkForNewRendezVous, 30000); // Vérifie toutes les 30 secondes
+  
+  return () => clearInterval(interval);
+}, [lastChecked]);
+
+// Réinitialise le compteur quand on clique sur la cloche
+const handleBellClick = () => {
+  setNotificationCount(0);
+  setLastChecked(new Date()); // Met à jour le dernier moment vérifié
+};
+
+// *************************
   // Gestion du redimensionnement
   useEffect(() => {
     const handleResize = () => {
@@ -202,15 +205,15 @@ const SidBar = () => {
                 <i className={`bx bxs-brightness-half them ${darkTheme ? 'active' : ''}`}></i>
             </div>
 
-            <a href="#" className="notification">
+            {/* <a href="#" className="notification">
                 <i className="bx bxs-bell"></i>
                 <span className="num">0</span>
-            </a>
+            </a> */}
+             <a href="#" className="notification" onClick={handleBellClick}>
+              <i className="bx bxs-bell"></i>
+              {notificationCount > 0 && <span className="num">{notificationCount}</span>}
+             </a>
 
-           {/* <a href="#" className="notification" onClick={handleClick}>
-            <i className="bx bxs-bell"></i>
-            {unseenCount > 0 && <span className="num">{unseenCount}</span>}
-          </a> */}
             <div className="right">
                 <div className="top">
                     <div className="profile">

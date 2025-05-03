@@ -25,12 +25,15 @@ router.get("/rendezVous/:idRdv", rendezVousController.getOne);
 router.post("/rendezVous/", rendezVousController.create);
 router.put("/rendezVous/:idRdv", rendezVousController.updateOne);
 router.delete("/rendezVous/:idRdv", rendezVousController.deleteOne);
+router.get('/available', rendezVousController.getAvailable);
+router.get('/new', rendezVousController.getNew);
 
 router.get("/consultation/", consultationController.getAll);
 router.get("/consultation/:idConsult", consultationController.getOne);
 router.post("/consultation/", consultationController.create);
 router.put("/consultation/:idConsult", consultationController.updateOne);
 router.delete("/consultation/:idConsult", consultationController.deleteOne);
+router.get('/availableForPrescription', consultationController.getAvailableForPrescription);
 
 router.get("/prescrire/", prescrireController.getAll);
 router.get("/prescrire/:idPrescrire", prescrireController.getOne);

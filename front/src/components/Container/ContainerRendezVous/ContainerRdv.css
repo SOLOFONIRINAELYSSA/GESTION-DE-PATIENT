@@ -210,12 +210,36 @@ body{
 
 
 
+.praticien-parent-result-item{
+  cursor: pointer !important;
+}
+
+praticien-result-item{
+  cursor: pointer !important;
+}
+
+.praticien-info-line {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.praticien-cin {
+  font-weight: bold;
+  min-width: 100px;
+}
+
+.praticien-name {
+  min-width: 200px;
+}
+
+.praticien-specialite {
+  font-style: italic;
+  color: #666;
+}
 
 
-
-
-
-
+/* ************************************* */
 @media screen and (max-width: 768px){
     #sidebar{
         width: 200px;

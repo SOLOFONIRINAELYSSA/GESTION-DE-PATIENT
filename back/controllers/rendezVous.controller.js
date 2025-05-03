@@ -271,8 +271,8 @@ export const getAll = async (req, res) => {
     let query = `
       SELECT 
         r.*,
-        p.nom AS nomPraticien,
-        pat.nom AS nomPatient
+        p.prenom AS prenomPraticien,
+        pat.prenom AS prenomPatient
       FROM rendezVous r
       LEFT JOIN praticiens p ON r.cinPraticien = p.cinPraticien
       LEFT JOIN patients pat ON r.cinPatient = pat.cinPatient
@@ -355,10 +355,54 @@ export const getOne = async (req, res) => {
   }
 };
 
+export const getAvailable = async (req, res) => {
+  try {
+    const query = `
+      SELECT r.*, p.prenom AS prenomPraticien
+      FROM rendezVous r
+      LEFT JOIN praticiens p ON r.cinPraticien = p.cinPraticien
+      WHERE NOT EXISTS (
+        SELECT 1 FROM consultations c WHERE c.idRdv = r.idRdv
+      )
+      ORDER BY r.dateHeure DESC
+    `;
+
+    const [results] = await pool.query(query);
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// Dans votre fichier d'API rendez-vous
+export const getNew = async (req, res) => {
+  try {
+    const { since } = req.query;
+    
+    console.log("Paramètre since reçu:", since); // Debug
+    
+    if (!since) {
+      return res.status(400).json({ error: "Le paramètre 'since' est requis" });
+    }
+
+    const rendezVousList = await RendezVous.find({ // Note: Changé de 'rendezVous' à 'RendezVous' (avec majuscule)
+      createdAt: { $gt: new Date(since) }
+    });
+
+    res.json(rendezVousList);
+  } catch (error) {
+    console.error("Erreur dans getNew:", error);
+    res.status(500).json({ error: "Erreur serveur", details: error.message });
+  }
+};
+
 export default {
   create,
   updateOne,
   deleteOne,
   getAll,
-  getOne
+  getOne,
+  getAvailable ,
+  getNew
 };

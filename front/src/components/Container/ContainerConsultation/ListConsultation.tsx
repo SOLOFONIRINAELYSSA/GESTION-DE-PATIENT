@@ -53,22 +53,23 @@ const ListConsultation = () => {
   };
 
   const handleEdit = (consultation: Consultation) => {
-    // Convertir la date au format attendu par input datetime-local
-    const formatDateForInput = (dateString: string) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      const pad = (num: number) => num.toString().padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    };
-  
     const consultationToEdit = {
       ...consultation,
-      idRdv: consultation.idRdv || 0, // Garder comme number
-      dateConsult: formatDateForInput(consultation.dateConsult),
+      idRdv: consultation.idRdv || 0,
+      dateConsult: consultation.dateConsult || '',
       compteRendu: consultation.compteRendu || ''
     };
     
-    navigate('/ajoutConsultation', { state: { consultation: consultationToEdit } });
+    navigate('/ajoutConsultation', { 
+      state: { 
+        consultation: consultationToEdit,
+        rendezVous: {
+          idRdv: consultation.idRdv,
+          dateHeure: consultation.dateConsult,
+          prenomPraticien: consultation.prenomPraticien
+        }
+      } 
+    });
   };
 
   const formatDate = (dateString: string | undefined | null): string => {
@@ -127,7 +128,7 @@ const ListConsultation = () => {
                   consultations.map((consultation) => (
                     <tr key={consultation.idConsult}>
                       <td>{formatDate(consultation.dateConsult)}</td>
-                      <td>Docteur {consultation.nomPraticien || 'Non spécifié'}</td>
+                      <td>Docteur {consultation.prenomPraticien || 'Non spécifié'}</td>
                       <td>{consultation.compteRendu ? 
                         (consultation.compteRendu.length > 50 
                           ? `${consultation.compteRendu.substring(0, 50)}...` 

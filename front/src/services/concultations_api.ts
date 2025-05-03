@@ -9,7 +9,8 @@ export interface Consultation {
     dateConsult: string;
     compteRendu?: string;
     dateHeure: string;
-    nomPraticien?: string;
+    prenomPraticien?: string;
+    prenomPatient?: string;
     cinPatient?: string;
     cinPraticien?: string;
   }
@@ -21,23 +22,45 @@ export interface Consultation {
     count?: number;
   }
 
-export async function createConsultation(data: Consultation): Promise<Consultation> {
-  try {
-    const response = await axios.post<Consultation>(
-      `${API_BASE_URL}/consultation`,
-      data
-    );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
+  // export async function createConsultation(data: Consultation): Promise<Consultation> {
+  //   try {
+  //     const response = await axios.post<Consultation>(`${API_BASE_URL}/consultation`, {
+  //       idRdv: data.idRdv,
+  //       dateConsult: data.dateConsult,
+  //       compteRendu: data.compteRendu
+  //     });
+  //     return response.data;
+  //   } catch (error) {
+  //     throw new Error(
+  //       axios.isAxiosError(error) 
+  //         ? error.response?.data?.error || "Erreur création consultation"
+  //         : "Erreur inconnue"
+  //     );
+  //   }
+  // }
+  export async function createConsultation(data: Consultation): Promise<Consultation> {
+    try {
+      // Vérification simple des dates
+      if (data.dateConsult && data.dateHeure && new Date(data.dateConsult) < new Date(data.dateHeure)) {
+        throw new Error("La date de consultation ne peut pas être antérieure à la date du rendez-vous");
+      }
+  
+      const response = await axios.post<Consultation>(`${API_BASE_URL}/consultation`, {
+        idRdv: data.idRdv,
+        dateConsult: data.dateConsult,
+        compteRendu: data.compteRendu
+      });
+      return response.data;
+  
+    } catch (error) {
       throw new Error(
-        error.response?.data?.error || 
-        "Erreur lors de la création de la consultation"
+        axios.isAxiosError(error) 
+          ? error.response?.data?.error || "La date de consultation ne peut pas être antérieure à la date du rendez-vous"
+          : error instanceof Error ? error.message : "Erreur inconnue"
       );
     }
-    throw new Error("Erreur inattendue");
   }
-}
+
 
 // export async function getAllConsultations(): Promise<Consultation[]> {
 //     try {
@@ -90,20 +113,46 @@ export async function getConsultationById(idConsult: number): Promise<Consultati
   }
 }
 
-export async function updateConsultation(idConsult: number, data: Partial<Consultation>): Promise<Consultation> {
+// export async function updateConsultation(idConsult: number, data: Partial<Omit<Consultation, 'idConsult' | 'idRdv'>>
+// ): Promise<Consultation> {
+//   try {
+//     const response = await axios.put<Consultation>(
+//       `${API_BASE_URL}/consultation/${idConsult}`,
+//       data
+//     );
+//     return response.data;
+//   } catch (error) {
+//     if (axios.isAxiosError(error)) {
+//       throw new Error(error.response?.data?.message || "Erreur lors de la mise à jour");
+//     }
+//     throw new Error("Erreur inconnue lors de la mise à jour");
+//   }
+// }
+export async function updateConsultation(
+  idConsult: number, 
+  data: Partial<Omit<Consultation, 'idConsult' | 'idRdv'>>
+): Promise<Consultation> {
   try {
+    // Vérification simple si dateConsult est fournie
+    if (data.dateConsult && data.dateHeure && new Date(data.dateConsult) < new Date(data.dateHeure)) {
+      throw new Error("La date de consultation ne peut pas être antérieure à la date du rendez-vous");
+    }
+
     const response = await axios.put<Consultation>(
       `${API_BASE_URL}/consultation/${idConsult}`,
       data
     );
     return response.data;
+
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || "Erreur lors de la mise à jour");
-    }
-    throw new Error("Erreur inconnue lors de la mise à jour");
+    throw new Error(
+      axios.isAxiosError(error)
+        ? error.response?.data?.message || "La date de consultation ne peut pas être antérieure à la date du rendez-vous"
+        : error instanceof Error ? error.message : "Erreur inconnue"
+    );
   }
 }
+
 
 export async function deleteConsultation(idConsult: number): Promise<void> {
     try {
@@ -167,3 +216,8 @@ export async function getConsultationsByPraticien(cinPraticien: string): Promise
     throw new Error("Erreur inattendue");
   }
 }
+
+export const getAllAvailableConsultations = async (): Promise<Consultation[]> => {
+  const response = await axios.get(`${API_BASE_URL}/availableForPrescription`);
+  return response.data;
+};

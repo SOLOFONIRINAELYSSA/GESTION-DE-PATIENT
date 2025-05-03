@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPrescription, updatePrescription, Prescription } from '../../../services/prscrires_api';
-import { getAllConsultations, Consultation } from '../../../services/concultations_api';
+import { getAllAvailableConsultations, Consultation } from '../../../services/concultations_api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,7 +9,8 @@ const AjoutPrescrire = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<Omit<Prescription, 'idPrescrire'> & { idPrescrire?: number }>({
+  const [formData, setFormData] = useState({
+    idPrescrire: 0,
     idConsult: 0,
     typePrescrire: '',
     posologie: '',
@@ -29,33 +30,64 @@ const AjoutPrescrire = () => {
     }
   };
 
+ 
   useEffect(() => {
-    const fetchConsultations = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const data = await getAllConsultations();
-        setConsultations(data);
+        // 1. Récupère toutes les consultations disponibles (y compris celle déjà prescrite)
+        let availableConsultations = await getAllAvailableConsultations();
+
+        if (availableConsultations.length === 0) {
+          toast.warn(
+            isEditMode 
+              ? "Aucune autre consultation disponible" 
+              : "Aucune consultation disponible sans prescription",
+            { autoClose: 5000 }
+          );
+        }
+  
+        if (location.state?.prescription) {
+          const { prescription } = location.state;
+          setIsEditMode(true);
+  
+          setFormData({
+            idPrescrire: prescription.idPrescrire,
+            idConsult: prescription.idConsult, // Conserve la consultation actuelle
+            typePrescrire: prescription.typePrescrire,
+            posologie: prescription.posologie,
+            datePrescrire: formatDateForInput(prescription.datePrescrire)
+          });
+  
+          // 2. Ajoute la consultation actuelle si elle n'est pas déjà dans la liste
+          if (!availableConsultations.some(c => c.idConsult === prescription.idConsult)) {
+            availableConsultations = [{
+              idConsult: prescription.idConsult,
+              dateConsult: prescription.dateConsult,
+              dateHeure: '',
+              idRdv: 0,
+              compteRendu: '',
+              prenomPatient: prescription.prenomPatient, // Ajouté
+              prenomPraticien: prescription.prenomPraticien // Ajouté
+            }, 
+            ...availableConsultations]
+          };
+        }
+  
+        setConsultations(availableConsultations);
+        
       } catch (error) {
-        console.error('Erreur lors de la récupération des consultations:', error);
+        console.error('Erreur:', error);
         toast.error('Erreur lors du chargement des consultations');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchConsultations();
-
-    // Vérifie si on est en mode édition
-    if (location.state?.prescription) {
-      setIsEditMode(true);
-      setFormData({
-        idPrescrire: location.state.prescription.idPrescrire,
-        idConsult: location.state.prescription.idConsult,
-        typePrescrire: location.state.prescription.typePrescrire,
-        posologie: location.state.prescription.posologie,
-        datePrescrire: formatDateForInput(location.state.prescription.datePrescrire)
-      });
-    }
+  
+    fetchData();
   }, [location.state]);
+
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -72,45 +104,40 @@ const AjoutPrescrire = () => {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
-
+  
     try {
+      const prescriptionData: Prescription = {
+        idPrescrire: formData.idPrescrire || 0, // 0 pour les nouvelles prescriptions
+        idConsult: formData.idConsult,
+        typePrescrire: formData.typePrescrire,
+        posologie: formData.posologie,
+        datePrescrire: formData.datePrescrire
+      };
+  
       if (isEditMode && formData.idPrescrire) {
-        await updatePrescription(formData.idPrescrire, formData);
+        await updatePrescription(formData.idPrescrire, prescriptionData);
         toast.success('Prescription modifiée avec succès');
       } else {
-        await createPrescription(formData);
+        await createPrescription(prescriptionData);
         toast.success('Prescription créée avec succès');
       }
       
       setTimeout(() => navigate('/listPrescrire'), 1500);
     } catch (error) {
       console.error('Erreur:', error);
-      if (error instanceof Error) {
-        toast.error(error.message || `Erreur lors de ${isEditMode ? 'la modification' : 'la création'} de la prescription`);
-      } else {
-        toast.error(`Erreur inattendue lors de ${isEditMode ? 'la modification' : 'la création'} de la prescription`);
-      }
+      toast.error(`${isEditMode ? 'La date de prescription ne peut pas être antérieure à la date de consultation' : 'La date de prescription ne peut pas être antérieure à la date de consultation'}`);
     }
   };
 
   const handleCancel = () => {
-    if (isEditMode) {
-      navigate('/listPrescrire');
-    } else {
-      setFormData({
-        idConsult: 0,
-        typePrescrire: '',
-        posologie: '',
-        datePrescrire: ''
-      });
-    }
+    navigate('/listPrescrire');
   };
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Chargement des consultations...</p>
+        <p>Chargement des consultations disponibles...</p>
       </div>
     );
   }
@@ -120,7 +147,7 @@ const AjoutPrescrire = () => {
       <main>
         <div className="head-title">
           <div className="left">
-            <h1 className='h1' style={{ color: '#bdb9b9' }}>{isEditMode ? 'Modifier une prescription' : 'Nouvelle prescription'}</h1>
+            <h1>{isEditMode ? 'Modifier une prescription' : 'Nouvelle prescription'}</h1>
             <ul className="breadcrumb">
               <li><a href="#">Prescrire</a></li>
               <li><i className='bx bx-chevron-right'></i></li>
@@ -142,68 +169,86 @@ const AjoutPrescrire = () => {
                     <span className="title">{isEditMode ? 'Modifier la prescription' : 'Ajouter une nouvelle prescription'}</span>
 
                     {isEditMode && (
-                      <div className="input-field-div">
-                        <input
-                          name="idPrescrire"
-                          type="hidden"
-                          value={formData.idPrescrire}
-                          readOnly
-                        />
-                      </div>
+                      <input type="hidden"
+                       name="idPrescrire" 
+                       readOnly
+                       value={formData.idPrescrire} />
                     )}
 
                     <div className="input-field-div">
-                      <label>Consultation</label>
+                      <label>Consultation <span className="required">*</span></label>
                       <select
                         name="idConsult"
-                        value={formData.idConsult}
-                        onChange={handleChange}
+                        value={formData.idConsult || ''}
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            idConsult: Number(e.target.value)
+                          });
+                        }}
                         required
                         className="select-consultation"
+                        disabled={consultations.length === 0} // Toujours modifiable sauf si aucune consultation disponible
                       >
-                        <option value="">Sélectionnez une consultation</option>
-                        {consultations.map(consult => {
-                          const dateFormatee = consult.dateConsult 
-                            ? new Date(consult.dateConsult).toLocaleDateString('fr-FR') 
-                            : 'Date inconnue';
-                          
-                          const patientInfo = consult.nomPatient || `Patient ${consult.cinPatient}`;
+                        {consultations.length === 0 ? (
+                          <option value="">Aucune consultation disponible</option>
+                        ) : (
+                          <>
+                            <option value="">Sélectionnez une consultation</option>
+                            {consultations.map(consult => {
+                              const dateFormatee = consult.dateConsult 
+                                ? new Date(consult.dateConsult).toLocaleString('fr-FR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : 'Date inconnue';
+                              
+                                const patientNom = consult.prenomPatient;
+                                const praticienNom = consult.prenomPraticien;
 
-                          return (
-                            <option key={consult.idConsult} value={consult.idConsult}>
-                              Consultation du {patientInfo} le {dateFormatee}
-                            </option>
-                          );
-                        })}
+                              return (
+                                <option 
+                                  key={`consult-${consult.idConsult}`}
+                                  value={consult.idConsult}
+                                >
+                                  Consultation du &nbsp; {`${patientNom} avec  Dr. ${praticienNom} le  ${dateFormatee}`}
+                                </option>
+                              );
+                            })}
+                          </>
+                        )}
                       </select>
                     </div>
 
                     <div className="input-field-div">
-                      <label>Type de prescription</label>
+                      <label>Type de prescription <span className="required">*</span></label>
                       <input
                         name="typePrescrire"
                         type="text"
                         value={formData.typePrescrire}
                         onChange={handleChange}
-                        placeholder="Type de prescription"
+                        placeholder="Ex: Médicament, Examen, etc."
                         required
                       />
                     </div>
 
                     <div className="input-field-div">
-                      <label>Posologie</label>
-                      <input
+                      <label>Posologie <span className="required">*</span></label>
+                      <textarea
                         name="posologie"
-                        type="text"
                         value={formData.posologie}
                         onChange={handleChange}
-                        placeholder="Posologie"
+                        placeholder="Détails de la posologie"
                         required
+                        rows={3}
                       />
                     </div>
 
                     <div className="input-field-div">
-                      <label>Date de prescription</label>
+                      <label>Date de prescription <span className="required">*</span></label>
                       <input
                         name="datePrescrire"
                         type="date"
@@ -214,9 +259,12 @@ const AjoutPrescrire = () => {
                     </div>
 
                     <div className="fields">
-                     <button type="submit"  className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}>
-                     <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i> &nbsp; &nbsp;
-                     <span className="btnText">{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>
+                      <button 
+                        type="submit"  
+                        className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}
+                      >
+                        <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i>
+                        <span>{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>
                       </button>
                       <button 
                         type="button" 
@@ -224,8 +272,8 @@ const AjoutPrescrire = () => {
                         onClick={handleCancel}
                         id='btnAnnuler'
                       >
-                        <i className='bx bxs-x-circle'></i> &nbsp; &nbsp;
-                        <span className="btnText">ANNULER</span>
+                        <i className='bx bxs-x-circle'></i>
+                        <span>ANNULER</span>
                       </button>
                     </div>
                   </div>
@@ -236,7 +284,7 @@ const AjoutPrescrire = () => {
         </div>
       </main>
 
-      <ToastContainer
+        <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}

@@ -28,7 +28,6 @@ const ListPrescrire = () => {
                 toast.error(err instanceof Error ? err.message : 'Erreur lors de la récupération des prescriptions');
             }
         };
-
         fetchPrescriptions();
     }, []);
 
@@ -57,25 +56,29 @@ const ListPrescrire = () => {
         }
     };
 
-    const handleEdit = (prescription: Prescription) => {
-        // Convertir la date au format attendu par input datetime-local
-        const formatDateForInput = (dateString: string) => {
-          if (!dateString) return '';
-          const date = new Date(dateString);
-          const pad = (num: number) => num.toString().padStart(2, '0');
-          return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+      const handleEdit = (prescription: Prescription) => {
+          const consultationToEdit = {
+            ...prescription,
+            idPrescrire: prescription.idPrescrire || 0,
+            datePrescrire: prescription.datePrescrire || '',
+            typePrescrire: prescription.typePrescrire || '',
+            posologie: prescription.posologie || ''
+          };
+          
+          navigate('/ajoutPrescrire', { 
+            state: { 
+              prescription: consultationToEdit,
+              rendezVous: {
+                idConsult: prescription.idConsult,
+                dateHeure: prescription.dateConsult,
+                prenomPatient: prescription.prenomPatient,
+                prenomPraticien: prescription.prenomPraticien
+              }
+            } 
+          });
         };
       
-        const prescriptionToEdit = {
-          ...prescription,
-          idConsult: prescription.idConsult || 0, 
-          datePrescrire: formatDateForInput(prescription.datePrescrire),
-          typePrescrire: prescription.typePrescrire,
-          posologie: prescription.posologie
-        };
-        
-        navigate('/ajoutPrescrire', { state: { prescription: prescriptionToEdit } });
-      };
 
     if (loading) {
         return (

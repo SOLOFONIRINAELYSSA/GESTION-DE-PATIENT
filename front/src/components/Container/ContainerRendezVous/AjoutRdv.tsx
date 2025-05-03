@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createRendezVous, updateRendezVous } from '../../../services/rendezVous_api';
 import { getAllPatients } from '../../../services/patients_api';
-import { getAllPraticiens} from '../../../services/praticiens_api';
+import { getAllPraticiens } from '../../../services/praticiens_api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../../Container/ContainerRendezVous/ContainerRdv.css';
@@ -25,7 +25,7 @@ interface RendezVous {
   cinPatient: string;
   cinPraticien: string;
   dateHeure: string;
-  idRdvParent?: string;
+  idRdvParent: string | null;
   statut: 'en_attente' | 'confirme' | 'annule';
   patientInfo?: {
     nom: string;
@@ -34,6 +34,7 @@ interface RendezVous {
   praticienInfo?: {
     nom: string;
     prenom: string;
+    specialite?: string;
   };
 }
 
@@ -45,8 +46,8 @@ const AjoutRdv = () => {
     cinPatient: '',
     cinPraticien: '',
     dateHeure: '',
-    idRdvParent: '',
-    statut: 'en_attente'
+    idRdvParent: null,
+    statut: 'en_attente',
   });
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [allPraticiens, setAllPraticiens] = useState<Praticien[]>([]);
@@ -56,6 +57,14 @@ const AjoutRdv = () => {
   const [praticienSearch, setPraticienSearch] = useState('');
   const [praticienResults, setPraticienResults] = useState<Praticien[]>([]);
   const [showPraticienResults, setShowPraticienResults] = useState(false);
+  const [praticienParentSearch, setPraticienParentSearch] = useState('');
+  const [praticienParentResults, setPraticienParentResults] = useState<Praticien[]>([]);
+  const [showPraticienParentResults, setShowPraticienParentResults] = useState(false);
+
+  const getFullName = (entity: Patient | Praticien | null | undefined): string => {
+    if (!entity) return '';
+    return `${entity.nom} ${entity.prenom}`;
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,30 +75,40 @@ const AjoutRdv = () => {
         ]);
         setAllPatients(patients);
         setAllPraticiens(praticiens);
+
+        if (location.state?.rdv) {
+          const rdv = location.state.rdv as RendezVous;
+          setIsEditMode(true);
+          
+          // Initialiser formData avec toutes les infos
+          setFormData({
+            idRdv: rdv.idRdv,
+            cinPatient: rdv.cinPatient,
+            cinPraticien: rdv.cinPraticien,
+            dateHeure: rdv.dateHeure,
+            idRdvParent: rdv.idRdvParent || null,
+            statut: rdv.statut || 'en_attente',
+            patientInfo: rdv.patientInfo,
+            praticienInfo: rdv.praticienInfo
+          });
+
+          // Initialiser les champs de recherche
+          const currentPatient = patients.find(p => p.cinPatient === rdv.cinPatient);
+          const currentPraticien = praticiens.find(p => p.cinPraticien === rdv.cinPraticien);
+          const currentPraticienParent = rdv.idRdvParent 
+            ? praticiens.find(p => p.cinPraticien === rdv.idRdvParent)
+            : null;
+
+          setPatientSearch(getFullName(currentPatient));
+          setPraticienSearch(getFullName(currentPraticien));
+          setPraticienParentSearch(getFullName(currentPraticienParent));
+        }
       } catch (error) {
         console.error("Erreur chargement données", error);
         toast.error("Erreur lors du chargement des données");
       }
     };
     loadData();
-
-    if (location.state?.rdv) {
-      setIsEditMode(true);
-      const rdv = location.state.rdv as RendezVous;
-      setFormData({
-        cinPatient: rdv.cinPatient,
-        cinPraticien: rdv.cinPraticien,
-        dateHeure: rdv.dateHeure,
-        idRdvParent: rdv.idRdvParent || '',
-        statut: rdv.statut || 'en_attente'
-      });
-      if (rdv.patientInfo) {
-        setPatientSearch(`${rdv.patientInfo.nom} ${rdv.patientInfo.prenom}`);
-      }
-      if (rdv.praticienInfo) {
-        setPraticienSearch(`${rdv.praticienInfo.nom} ${rdv.praticienInfo.prenom}`);
-      }
-    }
   }, [location.state]);
 
   // Recherche locale des patients
@@ -125,10 +144,33 @@ const AjoutRdv = () => {
     }
   }, [praticienSearch, allPraticiens]);
 
+  // Recherche des praticiens référents
+  const searchPraticienParents = (searchTerm: string) => {
+    if (searchTerm.length < 1) {
+      setPraticienParentResults([]);
+      setShowPraticienParentResults(false);
+      return;
+    }
+
+    const results = allPraticiens.filter(praticien =>
+      (praticien.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       praticien.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       praticien.cinPraticien.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      praticien.cinPraticien !== formData.cinPraticien
+    ).slice(0, 10);
+
+    setPraticienParentResults(results);
+    setShowPraticienParentResults(results.length > 0);
+  };
+
   const handlePatientSelect = (patient: Patient) => {
     setFormData(prev => ({
       ...prev,
-      cinPatient: patient.cinPatient
+      cinPatient: patient.cinPatient,
+      patientInfo: {
+        nom: patient.nom,
+        prenom: patient.prenom
+      }
     }));
     setPatientSearch(`${patient.nom} ${patient.prenom}`);
     setShowPatientResults(false);
@@ -137,18 +179,29 @@ const AjoutRdv = () => {
   const handlePraticienSelect = (praticien: Praticien) => {
     setFormData(prev => ({
       ...prev,
-      cinPraticien: praticien.cinPraticien
+      cinPraticien: praticien.cinPraticien,
+      praticienInfo: {
+        nom: praticien.nom,
+        prenom: praticien.prenom,
+        ...(praticien.specialite && { specialite: praticien.specialite })
+      }
     }));
     setPraticienSearch(`${praticien.nom} ${praticien.prenom}`);
     setShowPraticienResults(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handlePraticienParentSelect = (praticien: Praticien) => {
+    if (praticien.cinPraticien === formData.cinPraticien) {
+      toast.warning("Un praticien ne peut pas être son propre référent");
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      idRdvParent: praticien.cinPraticien
     }));
+    setPraticienParentSearch(`${praticien.nom} ${praticien.prenom}`);
+    setShowPraticienParentResults(false);
   };
 
   const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,8 +226,8 @@ const AjoutRdv = () => {
         idRdvParent: formData.idRdvParent || null
       };
 
-      if (isEditMode && location.state?.rdv?.idRdv) {
-        await updateRendezVous(location.state.rdv.idRdv, rdvData);
+      if (isEditMode && formData.idRdv) {
+        await updateRendezVous(formData.idRdv, rdvData);
         toast.success('Rendez-vous modifié avec succès');
       } else {
         await createRendezVous(rdvData);
@@ -229,97 +282,83 @@ const AjoutRdv = () => {
                   <div className="details personal">
                     <span className="title">{isEditMode ? 'Modifier un rendez-vous' : 'Prendre un rendez-vous'}</span>
 
-                 <div className="fields">
-                    <div className="input-field-div">
-                        <label>Rechercher Patient</label>
+                    <div className="fields">
+                      <div className="input-field-div">
+                        <label>Rechercher Patient <span className="required">*</span></label>
                         <div className="patient-search-container">
-                        <input
+                          <input
                             type="text"
                             value={patientSearch}
                             onChange={(e) => {
-                            setPatientSearch(e.target.value);
-                            // Si l'utilisateur efface le champ, réinitialiser le CIN
-                            if (e.target.value === '') {
+                              setPatientSearch(e.target.value);
+                              if (e.target.value === '') {
                                 setFormData(prev => ({ ...prev, cinPatient: '' }));
-                            }
+                              }
                             }}
                             placeholder="Nom, prénom ou CIN du patient"
                             className="patient-search-input"
-                        />
-                        
-                        {/* Champ caché pour la soumission */}
-                        <input
-                            name="cinPatient"
-                            type="hidden"
-                            value={formData.cinPatient}
                             required
-                        />
+                          />
 
-                        {showPatientResults && patientResults.length > 0 && (
+                          {showPatientResults && patientResults.length > 0 && (
                             <div className="patient-results-dropdown">
-                            {patientResults.map((patient) => (
+                              {patientResults.map((patient) => (
                                 <div
-                                key={patient.cinPatient}
-                                className="patient-result-item"
-                                onClick={() => handlePatientSelect(patient)}
+                                  key={patient.cinPatient}
+                                  className="patient-result-item"
+                                  onClick={() => handlePatientSelect(patient)}
                                 >
-                                <span className="patient-cin">{patient.cinPatient}</span>
-                                <span className="patient-name">{patient.nom} {patient.prenom}</span>
+                                  <span className="patient-cin">{patient.cinPatient}</span>
+                                  <span className="patient-name">{patient.nom} {patient.prenom}</span>
                                 </div>
-                            ))}
+                              ))}
                             </div>
-                        )}
+                          )}
                         </div>
-                    </div>
-                    <div className="input-field-div">
-                        <label>Rechercher Praticien</label>
+                      </div>
+                      <div className="input-field-div">
+                        <label>Rechercher Praticien <span className="required">*</span></label>
                         <div className="praticien-search-container">
-                        <input
+                          <input
                             type="text"
                             value={praticienSearch}
                             onChange={(e) => {
-                            setPraticienSearch(e.target.value);
-                            // Si l'utilisateur efface le champ, réinitialiser le CIN
-                            if (e.target.value === '') {
+                              setPraticienSearch(e.target.value);
+                              if (e.target.value === '') {
                                 setFormData(prev => ({ ...prev, cinPraticien: '' }));
-                            }
+                              }
                             }}
                             placeholder="Nom, prénom, CIN ou spécialité"
                             className="praticien-search-input"
-                        />
-                        
-                        {/* Champ caché pour la soumission */}
-                        <input
-                            name="cinPraticien"
-                            type="hidden"
-                            value={formData.cinPraticien}
                             required
-                        />
+                          />
 
-                        {showPraticienResults && praticienResults.length > 0 && (
+                          {showPraticienResults && praticienResults.length > 0 && (
                             <div className="praticien-results-dropdown">
-                            {praticienResults.map((praticien) => (
+                              {praticienResults.map((praticien) => (
                                 <div
-                                key={praticien.cinPraticien}
-                                className="praticien-result-item"
-                                onClick={() => handlePraticienSelect(praticien)}
+                                  key={praticien.cinPraticien}
+                                  className="praticien-result-item"
+                                  onClick={() => handlePraticienSelect(praticien)}
                                 >
-                                <span className="praticien-cin">{praticien.cinPraticien}</span>
-                                <span className="praticien-name">{praticien.nom} {praticien.prenom}</span>
-                                {praticien.specialite && (
-                                    <span className="praticien-specialite">{praticien.specialite}</span>
-                                )}
+                                  <div className="praticien-info-line">
+                                    <span className="praticien-cin">{praticien.cinPraticien}</span> &nbsp;
+                                    <span className="praticien-name">{praticien.nom} &nbsp; {praticien.prenom}</span>
+                                    {praticien.specialite && (
+                                      <span className="praticien-specialite">{praticien.specialite}</span>
+                                    )}
+                                  </div>
                                 </div>
-                            ))}
+                              ))}
                             </div>
-                        )}
+                          )}
                         </div>
+                      </div>
                     </div>
-                 </div>
 
                     <div className="fields">
                       <div className="input-field-div">
-                        <label>Date et heure</label>                                                
+                        <label>Date et heure <span className="required">*</span></label>                                                
                         <input 
                           name="dateHeure" 
                           type="datetime-local" 
@@ -339,16 +378,43 @@ const AjoutRdv = () => {
                       </div>
                     </div>
 
-                    <div className="fields">
-                      <div className="input-field-div">
-                        <label>Rendez-vous parent (optionnel)</label>
-                        <input 
-                          name="idRdvParent" 
-                          type="text" 
-                          placeholder="ID du rendez-vous parent" 
-                          value={formData.idRdvParent}
-                          onChange={handleChange}
+                    <div className="input-field-div">
+                      <label>Praticien référent (optionnel)</label>
+                      <div className="praticien-search-container">
+                        <input
+                          type="text"
+                          value={praticienParentSearch}
+                          onChange={(e) => {
+                            setPraticienParentSearch(e.target.value);
+                            searchPraticienParents(e.target.value);
+                          }}
+                          placeholder="Rechercher par CIN, nom ou spécialité"
+                          className="praticien-parent-search-input"
                         />
+
+                        {showPraticienParentResults && praticienParentResults.length > 0 && (
+                          <div className="praticien-results-dropdown">
+                            {praticienParentResults.map((praticien) => (
+                              <div
+                                key={praticien.cinPraticien}
+                                className="praticien-result-item"
+                                onClick={() => handlePraticienParentSelect(praticien)}
+                              >
+                                <div className="praticien-info-line">
+                                <span className="praticien-cin">{praticien.cinPraticien}</span> &nbsp;
+                                <span className="praticien-name">
+                                  {praticien.nom} &nbsp; {praticien.prenom} &nbsp;
+                                </span>
+                                {praticien.specialite && (
+                                  <span className="praticien-specialite">
+                                    {praticien.specialite}
+                                  </span>
+                                )}
+                              </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 

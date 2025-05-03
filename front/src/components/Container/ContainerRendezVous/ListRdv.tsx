@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit } from 'react-icons/fa';
 import { RendezVous, getAllRendezVous, deleteRendezVous, updateRendezVousStatus } from '../../../services/rendezVous_api';
-import { getAllPatients } from '../../../services/patients_api';
-import { getAllPraticiens } from '../../../services/praticiens_api';
+import { getAllPatients, Patient } from '../../../services/patients_api';
+import { getAllPraticiens, Praticien } from '../../../services/praticiens_api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Dialog from '@mui/material/Dialog';
@@ -23,8 +23,38 @@ const ListRdv = () => {
   const [patients, setPatients] = useState<Record<string, string>>({});
   const [praticiens, setPraticiens] = useState<Record<string, string>>({});
 
+  // useEffect(() => {
+  //   fetchRendezVous();
+  //   loadNames();
+  // }, []);
+
   useEffect(() => {
-    fetchRendezVous();
+    const loadAllData = async () => {
+      try {
+        // 1. Charger les rendez-vous et les données associées en parallèle
+        const [rdvData, patientsData, praticiensData] = await Promise.all([
+          fetchRendezVous(),      // Vos rendez-vous existants
+          getAllPatients(),       // Liste des patients
+          getAllPraticiens()      // Liste des praticiens
+        ]);
+  
+        // 2. Mettre à jour les états
+        // (Adaptez selon comment vous gérez les rendez-vous)
+        // setRendezVous(rdvData); 
+        setPatients(patientsData);
+        setPraticiens(praticiensData);
+  
+        // 3. Charger les noms si nécessaire (fonction à définir)
+        await loadNames(patientsData, praticiensData);
+  
+      } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+        // Ajoutez un toast ou une notification d'erreur si nécessaire
+        // toast.error("Erreur lors du chargement des données");
+      }
+    };
+  
+    loadAllData();
     loadNames();
   }, []);
 
@@ -35,12 +65,12 @@ const ListRdv = () => {
       const praticiensData = await getAllPraticiens(); // À implémenter
       
       const patientsMap = patientsData.reduce((acc, patient) => {
-        acc[patient.cinPatient] = patient.nom;
+        acc[patient.cinPatient] = patient.prenom;
         return acc;
       }, {} as Record<string, string>);
       
       const praticiensMap = praticiensData.reduce((acc, praticien) => {
-        acc[praticien.cinPraticien] = praticien.nom;
+        acc[praticien.cinPraticien] = praticien.prenom;
         return acc;
       }, {} as Record<string, string>);
       
@@ -88,8 +118,52 @@ const ListRdv = () => {
     }
   };
 
+  // const handleEdit = (rdv: RendezVous) => {
+  //   navigate('/ajoutRdv', { state: { rdv } });
+  // };
+
   const handleEdit = (rdv: RendezVous) => {
-    navigate('/ajoutRdv', { state: { rdv } });
+    console.log('RDV à éditer:', rdv);
+    
+    try {
+      // 1. Vérifier et initialiser patients et praticiens
+      const patientsList = Array.isArray(patients) ? patients : [];
+      const praticiensList = Array.isArray(praticiens) ? praticiens : [];
+  
+      // 2. Trouver les informations complètes (avec vérifications)
+      const patientComplet = patientsList.find((p: Patient) => p.cinPatient === rdv.cinPatient);
+      const praticienComplet = praticiensList.find((p: Praticien) => p.cinPraticien === rdv.cinPraticien);
+  
+      // 3. Préparer l'objet à transmettre (version simplifiée et sécurisée)
+      const rdvAEditer = {
+        ...rdv,
+        idRdvParent: rdv.idRdvParent || null,
+        ...(patientComplet && { 
+          patientInfo: { 
+            nom: patientComplet.nom, 
+            prenom: patientComplet.prenom 
+          }
+        }),
+        ...(praticienComplet && {
+          praticienInfo: {
+            nom: praticienComplet.nom,
+            prenom: praticienComplet.prenom,
+            ...(praticienComplet.specialite && { specialite: praticienComplet.specialite })
+          }
+        })
+      };
+  
+      // 4. Navigation
+      navigate('/ajoutRdv', { 
+        state: { 
+          rdv: rdvAEditer 
+        } 
+      });
+      
+    } catch (error) {
+      console.error("Erreur lors de l'édition:", error);
+      // Vous pouvez aussi ajouter une notification à l'utilisateur ici
+    }
   };
 
   const handleStatusChange = async (idRdv: number, currentStatus: 'en_attente' | 'confirme' | 'annule') => {
@@ -191,7 +265,7 @@ const ListRdv = () => {
                   rendezVous.map((rdv) => (
                     <tr key={rdv.idRdv}>
                       <td>{patients[rdv.cinPatient] || rdv.cinPatient}</td>
-                      <td>{praticiens[rdv.cinPraticien] || rdv.cinPraticien}</td>
+                      <td>Dr. {praticiens[rdv.cinPraticien] || rdv.cinPraticien}</td>
                       <td>{formatDateTime(rdv.dateHeure)}</td>
                       <td>
                         <span 
@@ -204,7 +278,8 @@ const ListRdv = () => {
                           {statusUpdateId === rdv.idRdv && <span className="status-loading">...</span>}
                         </span>
                       </td>
-                      <td>{rdv.idRdvParent}</td>
+                      {/* <td>{rdv.idRdvParent}</td> */}
+                      <td>Dr. {praticiens[rdv.idRdvParent] || null}</td>
                       <td className='td-tbn-actions'>
                         <button 
                           className="edit-btn"

@@ -16,7 +16,7 @@ interface CombinedData {
   posologie: string;
   nomPatient?: string;
   prenomPatient?: string;
-  nomPraticien?: string;
+  prenomPraticien?: string;
   specialite?: string;
   compteRendu?: string;
 }
@@ -50,7 +50,7 @@ const ListSuivi = () => {
                         posologie: prescription.posologie,
                         prenomPatient: prescription.prenomPatient,
                         nomPatient: prescription.nomPatient,
-                        nomPraticien: praticien?.nom,
+                        prenomPraticien: praticien?.prenom,
                         specialite: praticien?.specialite,
                         compteRendu: consultation?.compteRendu
                     };
@@ -111,7 +111,7 @@ const ListSuivi = () => {
                         <h1>Détail du suivi médical</h1>
                         <div class="info"><span class="label">Date:</span> ${new Date(suivi.datePrescrire).toLocaleDateString()}</div>
                         <div class="info"><span class="label">Patient:</span> ${suivi.prenomPatient || 'Inconnu'} ${suivi.nomPatient || ''}</div>
-                        <div class="info"><span class="label">Praticien:</span> ${suivi.nomPraticien ? `Dr. ${suivi.nomPraticien} (${suivi.specialite})` : 'Inconnu'}</div>
+                        <div class="info"><span class="label">Praticien:</span> ${suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</div>
                         <div class="info"><span class="label">Compte rendu:</span> ${suivi.compteRendu || 'Non spécifié'}</div>
                         <div class="info"><span class="label">Prescription:</span> ${suivi.typePrescrire} - ${suivi.posologie}</div>
                     </body>
@@ -211,8 +211,8 @@ const ListSuivi = () => {
                                     suivis.map((suivi) => (
                                         <tr key={suivi.idPrescrire}>
                                             <td>{new Date(suivi.datePrescrire).toLocaleDateString()}</td>
-                                            <td>{suivi.prenomPatient} {suivi.nomPatient}</td>
-                                            <td>{suivi.nomPraticien ? `Dr. ${suivi.nomPraticien} (${suivi.specialite})` : 'Inconnu'}</td>
+                                            <td>{suivi.nomPatient} &nbsp; {suivi.prenomPatient} </td>
+                                            <td>{suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</td>
                                             <td>{suivi.compteRendu || '-'}</td>
                                             <td>{suivi.typePrescrire}: {suivi.posologie}</td>
                                             <td className='td-tbn-actions'>
