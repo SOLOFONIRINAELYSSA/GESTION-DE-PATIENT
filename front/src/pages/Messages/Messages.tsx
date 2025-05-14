@@ -1,11 +1,11 @@
 import SidBar from "../../components/SidBarNavBar/SidBar"
-import ContainerMessage from "../../components/Container/ContainerPracticien/AjoutPracticien"
+import ComMessages from "../../components/Container/ComMessages/ComMessages"
 
 const Messages = () => {
   return (
     <div>
         <SidBar />
-        <ContainerMessage />
+        <ComMessages />
     </div>
   )
 }

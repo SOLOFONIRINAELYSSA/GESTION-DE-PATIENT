@@ -39,6 +39,7 @@
     color: var(--footer-txt);
 }
 
+
 /* body.dark .footer{
     background: red !important;
 } */
@@ -213,6 +214,10 @@
   
   .edit-btn i, .delete-btn i {
     font-size: 1.25rem;
+  }
+
+  .modif-btn{
+    background: #388e3c !important;
   }
   
   /* Animation au clic */

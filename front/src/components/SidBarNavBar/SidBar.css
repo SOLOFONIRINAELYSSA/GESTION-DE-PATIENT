@@ -556,3 +556,81 @@ body{
       font-size: 15px;
     }
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* CSS POUR NOTIFICQTION LISTE SUR NAV BAR  */
+  .css-1nl0624{
+    max-height: 440px !important;
+  }
+.css-7ax0nd-MuiBottomNavigation-root {
+    position: relative !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Style pour le bouton "VOIR PLUS" */
+  .btn-voir-plus {
+    background: linear-gradient(135deg, #3a7bd5, #00d2ff) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    color: white !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    padding: 12px 0 !important;
+    transition: all 0.3s ease !important;
+    text-transform: uppercase !important;
+    font-size: 0.8rem !important;
+  }
+  
+  /* Effet hover */
+  .btn-voir-plus:hover {
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3) !important;
+  }
+  
+  /* Effet actif */
+  .btn-voir-plus:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(58, 123, 213, 0.3) !important;
+  }
+  
+  /* Style pour l'icône si vous en ajoutez une */
+  .btn-voir-plus .MuiBottomNavigationAction-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  /* Style pour le texte du label */
+  .btn-voir-plus .MuiBottomNavigationAction-label.Mui-selected {
+    font-size: 0.8rem !important;
+    opacity: 1 !important;
+  }
+
+
+
+
+
+
+
+
+
+
+
+  

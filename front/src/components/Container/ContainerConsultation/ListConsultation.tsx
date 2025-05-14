@@ -53,6 +53,7 @@ const ListConsultation = () => {
   };
 
   const handleEdit = (consultation: Consultation) => {
+    
     const consultationToEdit = {
       ...consultation,
       idRdv: consultation.idRdv || 0,

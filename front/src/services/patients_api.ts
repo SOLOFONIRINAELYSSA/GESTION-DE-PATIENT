@@ -14,6 +14,7 @@ export interface Patient {
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4040/api";
 
 export async function searchPatients(query: string): Promise<Patient[]> {
+    
     try {
       const response = await axios.get<Patient[]>(`${API_BASE_URL}/patient/search`, {
         params: { q: query }

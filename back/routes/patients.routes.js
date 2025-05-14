@@ -26,7 +26,8 @@ router.post("/rendezVous/", rendezVousController.create);
 router.put("/rendezVous/:idRdv", rendezVousController.updateOne);
 router.delete("/rendezVous/:idRdv", rendezVousController.deleteOne);
 router.get('/available', rendezVousController.getAvailable);
-router.get('/new', rendezVousController.getNew);
+router.get("/rendezVous/pending/count", rendezVousController.getPendingCount);
+router.get("/rendezVous/pending/notifications", rendezVousController.getPendingNotifications);
 
 router.get("/consultation/", consultationController.getAll);
 router.get("/consultation/:idConsult", consultationController.getOne);

@@ -56,6 +56,7 @@ li{
 .dark-theme-variables{
     --grey: rgb(17, 20, 26);
     --light: rgb(13, 16, 22);
+    --orber-dark: rgb(17, 20, 26);
 
     --color-logo: #bdb9b9;
     --dark-sidebar: #5a5a5a;
@@ -252,6 +253,10 @@ body{
     flex-basis: 500px;
 }
 
+.tbl{
+    max-height: 350px !important;
+}
+
 #content main .table-date .head{
     display: flex;
     align-items: center;
@@ -319,10 +324,11 @@ body{
     font-size: 13px;
     text-align: left;
     border-bottom: 1px solid var(--grey);
+    background: var(--orber-dark);
 }
 
 #content main .table-date .orber table td{
-    padding: 16px 0;
+    /* padding: 16px 0; */
 }
 
 #content main .table-date .orber table tr td:first-child{

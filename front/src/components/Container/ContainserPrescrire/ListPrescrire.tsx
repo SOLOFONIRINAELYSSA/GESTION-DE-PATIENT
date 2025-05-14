@@ -60,7 +60,7 @@ const ListPrescrire = () => {
       const handleEdit = (prescription: Prescription) => {
           const consultationToEdit = {
             ...prescription,
-            idPrescrire: prescription.idPrescrire || 0,
+            idConsult: prescription.idConsult || 0,
             datePrescrire: prescription.datePrescrire || '',
             typePrescrire: prescription.typePrescrire || '',
             posologie: prescription.posologie || ''
@@ -71,7 +71,7 @@ const ListPrescrire = () => {
               prescription: consultationToEdit,
               rendezVous: {
                 idConsult: prescription.idConsult,
-                dateHeure: prescription.dateConsult,
+                dateConsult: prescription.dateConsult,
                 prenomPatient: prescription.prenomPatient,
                 prenomPraticien: prescription.prenomPraticien
               }

@@ -349,7 +349,7 @@ const AjoutPatient = () => {
                     </div>
 
                     <div className="fields button-field">
-                      <button type="submit"  className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}>
+                      <button type="submit"  className={`nextBtn ${isEditMode ? 'modif-btn' : 'add-btn'}`}>
                       <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i> &nbsp; &nbsp;
                         <span className="btnText">{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>
                       </button>

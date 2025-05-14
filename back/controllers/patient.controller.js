@@ -173,7 +173,7 @@ async function deleteOne(req, res) {
 
 async function getAll(req, res) {
   try {
-    const [patients] = await pool.query("SELECT * FROM patients ORDER BY nom, prenom");
+    const [patients] = await pool.query("SELECT * FROM patients ORDER BY nom, prenom ASC");
     
     return res.status(200).json({
       success: true,

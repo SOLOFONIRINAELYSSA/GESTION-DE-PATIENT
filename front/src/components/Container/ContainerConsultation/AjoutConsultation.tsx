@@ -216,7 +216,7 @@ const AjoutConsultation = () => {
                       </div>
                     )}
 
-                    <div className="input-field-div">
+                    {/* <div className="input-field-div">
                       <label>Rendez-vous <span className="required">*</span></label>
                       <select
                           name="idRdv"
@@ -261,7 +261,55 @@ const AjoutConsultation = () => {
                             </>
                           )}
                         </select>
-                    </div>
+                    </div> */}
+
+                  <div className="input-field-div">
+                    <label>Rendez-vous <span className="required">*</span></label>
+                    <select
+                      name="idRdv"
+                      value={formData.idRdv || ''}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          idRdv: Number(e.target.value)
+                        });
+                      }}
+                      required
+                      className="select-rdv"
+                      disabled={rendezVousList.filter(rdv => rdv.statut === "confirme").length === 0}
+                    >
+                      {rendezVousList.filter(rdv => rdv.statut === "confirme").length === 0 ? (
+                        <option value="">Aucun rendez-vous confirmé disponible</option>
+                      ) : (
+                        <>
+                          <option value="">Sélectionnez un rendez-vous confirmé</option>
+                          {rendezVousList
+                            .filter(rdv => rdv.statut === "confirme")
+                            .map(rdv => {
+                              const praticienNom = rdv.prenomPraticien || rdv.praticienInfo?.prenom;
+                              const dateRdv = rdv.dateHeure 
+                                ? new Date(rdv.dateHeure).toLocaleString('fr-FR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : '';
+                                  
+                              return (
+                                <option 
+                                  key={`rdv-${rdv.idRdv}`}
+                                  value={rdv.idRdv}
+                                >
+                                  {`Rendez-vous avec Dr. ${praticienNom} le ${dateRdv}`}
+                                </option>
+                              );
+                            })}
+                        </>
+                      )}
+                    </select>
+                  </div>
                  
                     <div className="input-field-div">
                       <label>Date de la consultation</label>
@@ -292,7 +340,7 @@ const AjoutConsultation = () => {
                     </div>
 
                     <div className="fields">
-                     <button type="submit"  className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}>
+                     <button type="submit"  className={`nextBtn ${isEditMode ? 'modif-btn' : 'add-btn'}`}>
                      <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i> &nbsp; &nbsp;
                      <span className="btnText">{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>
                       </button>

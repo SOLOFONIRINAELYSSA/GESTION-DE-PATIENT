@@ -24,7 +24,7 @@ const AjoutPrescrire = () => {
     try {
       const date = new Date(dateString);
       const pad = (num: number) => num.toString().padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     } catch {
       return '';
     }
@@ -251,9 +251,14 @@ const AjoutPrescrire = () => {
                       <label>Date de prescription <span className="required">*</span></label>
                       <input
                         name="datePrescrire"
-                        type="date"
+                        type="datetime-local"
                         value={formData.datePrescrire}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            datePrescrire: e.target.value 
+                          });
+                        }}
                         required
                       />
                     </div>
@@ -261,7 +266,7 @@ const AjoutPrescrire = () => {
                     <div className="fields">
                       <button 
                         type="submit"  
-                        className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}
+                        className={`nextBtn ${isEditMode ? 'modif-btn' : 'add-btn'}`}
                       >
                         <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i>
                         <span>{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>

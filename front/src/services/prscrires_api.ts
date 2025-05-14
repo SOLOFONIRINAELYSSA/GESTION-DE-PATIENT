@@ -12,6 +12,8 @@ export interface Prescription {
     dateConsult?: string;
     prenomPraticien?: string;
     prenomPatient?: string;
+    nomPatient?: string;
+    agePatient?: number;
 }
 
 interface ApiResponse<T> {

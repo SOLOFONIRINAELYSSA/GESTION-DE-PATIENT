@@ -11,7 +11,7 @@ const Home = () => {
         <ContainerHome />
 
         <section id="content">
-          <footer className="footer">
+          <footer className="footer footer-das">
               <div className="footer-text">
                   <p>&copy; 2025 G-PATIENT | tous Droits Réservés.</p>
               </div>

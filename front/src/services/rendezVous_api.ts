@@ -8,6 +8,7 @@ axios.defaults.baseURL = API_BASE_URL;
   cinPatient: string;
   cinPraticien: string;
   dateHeure: string;
+  prenomPatient?: string;
   prenomPraticien?: string;
   idRdvParent: string | null; // Soit string, soit null, mais pas undefined
   statut: 'en_attente' | 'confirme' | 'annule';
@@ -21,6 +22,47 @@ axios.defaults.baseURL = API_BASE_URL;
     prenom: string;
     specialite?: string;
   };
+}
+
+export interface Notification {
+  idRdv: number;
+  primary: string;
+  secondary: string;
+  person: string;
+}
+
+export async function getPendingRendezVousNotifications(): Promise<Notification[]> {
+  try {
+    const response = await axios.get<{
+      success: boolean;
+      data: Array<{
+        idRdv: number;
+        cinPatient: string;
+        cinPraticien: string;
+        dateHeure: string;
+        prenomPatient: string;
+        prenomPraticien: string;
+      }>;
+    }>(`${API_BASE_URL}/rendezVous/pending/notifications`);
+    
+    if (response.data.success) {
+      return response.data.data.map(rdv => ({
+        idRdv: rdv.idRdv,
+        primary: 'Nouvel rendez-vous',
+        secondary: `M. ${rdv.prenomPatient} a demandé un rendez-vous avec Dr ${rdv.prenomPraticien} le ${new Date(rdv.dateHeure).toLocaleString()}`,
+        person: '/static/images/avatar/5.jpg' 
+      }));
+    }
+    throw new Error("Erreur lors de la récupération des notifications");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.error || 
+        "Erreur lors de la récupération des notifications"
+      );
+    }
+    throw new Error("Erreur inattendue");
+  }
 }
 
 export async function createRendezVous(data: RendezVous): Promise<RendezVous> {
@@ -64,6 +106,7 @@ export async function createRendezVous(data: RendezVous): Promise<RendezVous> {
 //     throw new Error("Erreur inattendue");
 //   }
 // }
+
 export async function getAllRendezVous(): Promise<RendezVous[]> {
   try {
     const response = await axios.get<{
@@ -160,8 +203,8 @@ export async function updateRendezVousStatus(
   statut: 'en_attente' | 'confirme' | 'annule'
 ): Promise<RendezVous> {
   try {
-    const response = await axios.patch<RendezVous>(
-      `${API_BASE_URL}/rendezVous/${idRdv}/status`,
+    const response = await axios.put<RendezVous>(
+      `${API_BASE_URL}/rendezVous/${idRdv}`,
       { statut }
     );
     return response.data;
@@ -170,6 +213,28 @@ export async function updateRendezVousStatus(
       throw new Error(error.response?.data?.message || "Erreur lors du changement de statut");
     }
     throw new Error("Erreur inconnue lors du changement de statut");
+  }
+}
+
+export async function getPendingRendezVousCount(): Promise<number> {
+  try {
+    const response = await axios.get<{
+      success: boolean;
+      count: number;
+    }>(`${API_BASE_URL}/rendezVous/pending/count`);
+    
+    if (response.data.success) {
+      return response.data.count;
+    }
+    throw new Error("Erreur lors de la récupération du nombre de rendez-vous en attente");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.error || 
+        "Erreur lors de la récupération du compteur"
+      );
+    }
+    throw new Error("Erreur inattendue");
   }
 }
 

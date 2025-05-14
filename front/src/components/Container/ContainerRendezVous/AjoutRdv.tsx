@@ -351,6 +351,7 @@ const AjoutRdv = () => {
                                 </div>
                               ))}
                             </div>
+                            
                           )}
                         </div>
                       </div>
@@ -421,7 +422,7 @@ const AjoutRdv = () => {
                     <div className="fields">
                       <button 
                         type="submit" 
-                        className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}
+                        className={`nextBtn ${isEditMode ? 'modif-btn' : 'add-btn'}`}
                       >
                          <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i> &nbsp; &nbsp;
                          <span className="btnText">{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>

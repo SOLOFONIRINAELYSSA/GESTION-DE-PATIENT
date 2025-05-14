@@ -1,5 +1,7 @@
 import pool from "../config/db.config.js";
 
+
+
 // Fonctions de validation (format "XXXX XXXX XXXX" - 14 caractères avec espaces)
 const validateCin = (cin) => /^[0-9]{4} [0-9]{4} [0-9]{4}$/.test(cin) && cin.length === 14;
 const validateDateTime = (dateTime) => !isNaN(Date.parse(dateTime));
@@ -78,6 +80,116 @@ export const create = async (req, res) => {
   }
 };
 
+// export const updateOne = async (req, res) => {
+//   try {
+//     const { idRdv } = req.params;
+//     const { dateHeure, statut, cinPatient, cinPraticien, idRdvParent } = req.body;
+
+//     // Vérifier qu'au moins un champ est fourni pour la modification
+//     if (!dateHeure && !statut && !cinPatient && !cinPraticien && !idRdvParent) {
+//       return res.status(400).json({ 
+//         success: false,
+//         error: "Au moins un champ à modifier est requis" 
+//       });
+//     }
+
+//     // Validations des champs fournis
+//     const updates = [];
+//     const params = [];
+
+//     if (dateHeure) {
+//       if (!validateDateTime(dateHeure)) {
+//         return res.status(400).json({ 
+//           success: false,
+//           error: "Format de date/heure invalide" 
+//         });
+//       }
+//       updates.push("dateHeure = ?");
+//       params.push(dateHeure);
+//     }
+
+//     if (statut) {
+//       if (!validateStatus(statut)) {
+//         return res.status(400).json({ 
+//           success: false,
+//           error: "Statut invalide" 
+//         });
+//       }
+//       updates.push("statut = ?");
+//       params.push(statut);
+//     }
+
+//     if (cinPatient) {
+//       if (!validateCin(cinPatient)) {
+//         return res.status(400).json({ 
+//           success: false,
+//           error: "CIN patient invalide" 
+//         });
+//       }
+//       updates.push("cinPatient = ?");
+//       params.push(cinPatient);
+//     }
+
+//     if (cinPraticien) {
+//       if (!validateCin(cinPraticien)) {
+//         return res.status(400).json({ 
+//           success: false,
+//           error: "CIN praticien invalide" 
+//         });
+//       }
+//       updates.push("cinPraticien = ?");
+//       params.push(cinPraticien);
+//     }
+
+//     if (idRdvParent) {
+//       if (!validateCin(idRdvParent)) {
+//         return res.status(400).json({ 
+//           success: false,
+//           error: "CIN parent invalide" 
+//         });
+//       }
+//       updates.push("idRdvParent = ?");
+//       params.push(idRdvParent);
+//     }
+
+//     params.push(idRdv);
+
+//     const query = `UPDATE rendezVous 
+//                   SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP 
+//                   WHERE idRdv = ?`;
+
+//     const [result] = await pool.query(query, params);
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ 
+//         success: false,
+//         error: "Rendez-vous non trouvé" 
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Rendez-vous modifié avec succès",
+//       data: { idRdv }
+//     });
+
+//   } catch (error) {
+//     console.error("Erreur modification rendez-vous:", error);
+    
+//     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+//       return res.status(400).json({ 
+//         success: false,
+//         error: "Référence invalide (patient/praticien non trouvé)" 
+//       });
+//     }
+    
+//     return res.status(500).json({ 
+//       success: false,
+//       error: "Erreur serveur lors de la modification" 
+//     });
+//   }
+// };
+
 export const updateOne = async (req, res) => {
   try {
     const { idRdv } = req.params;
@@ -107,10 +219,12 @@ export const updateOne = async (req, res) => {
     }
 
     if (statut) {
-      if (!validateStatus(statut)) {
+      // Validation spécifique du statut
+      const allowedStatus = ['en_attente', 'confirme', 'annule'];
+      if (!allowedStatus.includes(statut)) {
         return res.status(400).json({ 
           success: false,
-          error: "Statut invalide" 
+          error: "Statut invalide. Valeurs autorisées: en_attente, confirme, annule" 
         });
       }
       updates.push("statut = ?");
@@ -143,7 +257,7 @@ export const updateOne = async (req, res) => {
       if (!validateCin(idRdvParent)) {
         return res.status(400).json({ 
           success: false,
-          error: "CIN parent invalide" 
+          error: "ID RDV parent invalide" 
         });
       }
       updates.push("idRdvParent = ?");
@@ -165,10 +279,16 @@ export const updateOne = async (req, res) => {
       });
     }
 
+    // Récupérer le rendez-vous mis à jour pour le retour
+    const [updatedRdv] = await pool.query(
+      `SELECT * FROM rendezVous WHERE idRdv = ?`, 
+      [idRdv]
+    );
+
     return res.status(200).json({
       success: true,
       message: "Rendez-vous modifié avec succès",
-      data: { idRdv }
+      data: updatedRdv[0]
     });
 
   } catch (error) {
@@ -183,7 +303,8 @@ export const updateOne = async (req, res) => {
     
     return res.status(500).json({ 
       success: false,
-      error: "Erreur serveur lors de la modification" 
+      error: "Erreur serveur lors de la modification",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -375,25 +496,55 @@ export const getAvailable = async (req, res) => {
   }
 };
 
-// Dans votre fichier d'API rendez-vous
-export const getNew = async (req, res) => {
+
+export const getPendingCount = async (req, res) => {
   try {
-    const { since } = req.query;
+    const [result] = await pool.query(
+      "SELECT COUNT(idRdv) as count FROM rendezVous WHERE statut = 'en_attente'"
+    );
     
-    console.log("Paramètre since reçu:", since); // Debug
-    
-    if (!since) {
-      return res.status(400).json({ error: "Le paramètre 'since' est requis" });
-    }
-
-    const rendezVousList = await RendezVous.find({ // Note: Changé de 'rendezVous' à 'RendezVous' (avec majuscule)
-      createdAt: { $gt: new Date(since) }
+    return res.status(200).json({
+      success: true,
+      count: result[0].count
     });
-
-    res.json(rendezVousList);
   } catch (error) {
-    console.error("Erreur dans getNew:", error);
-    res.status(500).json({ error: "Erreur serveur", details: error.message });
+    console.error("Erreur récupération compteur:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Erreur serveur lors de la récupération du compteur" 
+    });
+  }
+};
+
+export const getPendingNotifications = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        r.idRdv,
+        r.cinPatient,
+        r.cinPraticien,
+        r.dateHeure,
+        p.prenom AS prenomPraticien,
+        pat.prenom AS prenomPatient
+      FROM rendezVous r
+      LEFT JOIN praticiens p ON r.cinPraticien = p.cinPraticien
+      LEFT JOIN patients pat ON r.cinPatient = pat.cinPatient
+      WHERE r.statut = 'en_attente'
+      ORDER BY r.dateHeure DESC
+    `;
+
+    const [rendezVous] = await pool.query(query);
+
+    return res.status(200).json({
+      success: true,
+      data: rendezVous
+    });
+  } catch (error) {
+    console.error("Erreur récupération notifications:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Erreur serveur lors de la récupération des notifications" 
+    });
   }
 };
 
@@ -403,6 +554,7 @@ export default {
   deleteOne,
   getAll,
   getOne,
-  getAvailable ,
-  getNew
+  getAvailable,
+  getPendingCount,
+  getPendingNotifications
 };

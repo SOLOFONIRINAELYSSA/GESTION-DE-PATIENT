@@ -305,7 +305,7 @@ const AjoutPracticien = () => {
                     <div className="fields">
                       <button 
                         type="submit" 
-                         className={`nextBtn ${isEditMode ? 'edit-btn' : 'add-btn'}`}
+                         className={`nextBtn ${isEditMode ? 'modif-btn' : 'add-btn'}`}
                       >
                          <i className={`bx ${isEditMode ? 'bxs-download' : 'bx-send'}`}></i> &nbsp; &nbsp;
                          <span className="btnText">{isEditMode ? 'ENREGISTRER' : 'ENVOYER'}</span>

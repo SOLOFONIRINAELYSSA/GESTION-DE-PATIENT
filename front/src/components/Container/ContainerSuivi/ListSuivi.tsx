@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getAllPrescriptions, deletePrescription } from '../../../services/prscrires_api';
 import { getAllPraticiens } from '../../../services/praticiens_api';
+import { getAllPatients } from '../../../services/patients_api';
 import { getAllConsultations } from '../../../services/concultations_api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -8,6 +9,8 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import { jsPDF } from "jspdf";
+// import autoTable from 'jspdf-autotable';
 
 interface CombinedData {
   idPrescrire: number;
@@ -19,6 +22,7 @@ interface CombinedData {
   prenomPraticien?: string;
   specialite?: string;
   compteRendu?: string;
+  agePatient?: number;
 }
 
 const ListSuivi = () => {
@@ -35,7 +39,8 @@ const ListSuivi = () => {
                 const [prescriptions, praticiens, consultations] = await Promise.all([
                     getAllPrescriptions(),
                     getAllPraticiens(),
-                    getAllConsultations()
+                    getAllConsultations(),
+                    getAllPatients()
                 ]);
 
                 // Combinaison des données
@@ -50,6 +55,7 @@ const ListSuivi = () => {
                         posologie: prescription.posologie,
                         prenomPatient: prescription.prenomPatient,
                         nomPatient: prescription.nomPatient,
+                        agePatient: prescription.agePatient,
                         prenomPraticien: praticien?.prenom,
                         specialite: praticien?.specialite,
                         compteRendu: consultation?.compteRendu
@@ -93,34 +99,103 @@ const ListSuivi = () => {
         }
     };
 
+    // const handlePrintRow = (suivi: CombinedData) => {
+    //     const printWindow = window.open('', '_blank');
+    //     if (printWindow) {
+    //         printWindow.document.write(`
+    //             <html>
+    //                 <head>
+    //                     <title>Détail du suivi</title>
+    //                     <style>
+    //                         body { font-family: Arial; margin: 20px; }
+    //                         h1 { color: #333; }
+    //                         .info { margin-bottom: 10px; }
+    //                         .label { font-weight: bold; }
+    //                     </style>
+    //                 </head>
+    //                 <body>
+    //                     <h1>Détail du suivi médical</h1>
+    //                     <div class="info"><span class="label">Date:</span> ${new Date(suivi.datePrescrire).toLocaleDateString()}</div>
+    //                     <div class="info"><span class="label">Patient:</span> ${suivi.prenomPatient || 'Inconnu'} ${suivi.nomPatient || ''}</div>
+    //                     <div class="info"><span class="label">Praticien:</span> ${suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</div>
+    //                     <div class="info"><span class="label">Compte rendu:</span> ${suivi.compteRendu || 'Non spécifié'}</div>
+    //                     <div class="info"><span class="label">Prescription:</span> ${suivi.typePrescrire} - ${suivi.posologie}</div>
+    //                 </body>
+    //             </html>
+    //         `);
+    //         printWindow.document.close();
+    //         printWindow.focus();
+    //         printWindow.print();
+    //     }
+    // };
+
+    
+    // const handlePrintRow = (suivi: CombinedData) => {
+    //     const content = `
+    //         <html>
+    //             <head>
+    //                 <title>Détail du suivi</title>
+    //                 <style>
+    //                     body { font-family: Arial; margin: 20px; }
+    //                     h1 { color: #333; }
+    //                     .info { margin-bottom: 10px; }
+    //                     .label { font-weight: bold; }
+    //                 </style>
+    //             </head>
+    //             <body>
+    //                 <h1>Détail du suivi médical</h1>
+    //                 <div class="info"><span class="label">Date:</span> ${new Date(suivi.datePrescrire).toLocaleDateString()}</div>
+    //                 <div class="info"><span class="label">Patient:</span> ${suivi.prenomPatient || 'Inconnu'} ${suivi.nomPatient || ''}</div>
+    //                 <div class="info"><span class="label">Praticien:</span> ${suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</div>
+    //                 <div class="info"><span class="label">Compte rendu:</span> ${suivi.compteRendu || 'Non spécifié'}</div>
+    //                 <div class="info"><span class="label">Prescription:</span> ${suivi.typePrescrire} - ${suivi.posologie}</div>
+    //             </body>
+    //         </html>
+    //     `;
+    
+    //     // Créer un blob avec le contenu HTML
+    //     const blob = new Blob([content], { type: 'text/html' });
+    //     const url = URL.createObjectURL(blob);
+        
+    //     // Créer un lien de téléchargement
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = `suivi_${suivi.idPrescrire}_${new Date(suivi.datePrescrire).toISOString().split('T')[0]}.html`;
+        
+    //     // Déclencher le téléchargement
+    //     document.body.appendChild(a);
+    //     a.click();
+        
+    //     // Nettoyer
+    //     document.body.removeChild(a);
+    //     URL.revokeObjectURL(url);
+    // };
+
     const handlePrintRow = (suivi: CombinedData) => {
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Détail du suivi</title>
-                        <style>
-                            body { font-family: Arial; margin: 20px; }
-                            h1 { color: #333; }
-                            .info { margin-bottom: 10px; }
-                            .label { font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Détail du suivi médical</h1>
-                        <div class="info"><span class="label">Date:</span> ${new Date(suivi.datePrescrire).toLocaleDateString()}</div>
-                        <div class="info"><span class="label">Patient:</span> ${suivi.prenomPatient || 'Inconnu'} ${suivi.nomPatient || ''}</div>
-                        <div class="info"><span class="label">Praticien:</span> ${suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</div>
-                        <div class="info"><span class="label">Compte rendu:</span> ${suivi.compteRendu || 'Non spécifié'}</div>
-                        <div class="info"><span class="label">Prescription:</span> ${suivi.typePrescrire} - ${suivi.posologie}</div>
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-        }
+        const doc = new jsPDF();
+        
+        // Titre
+        doc.setFontSize(18);
+        doc.text("Détail du suivi médical", 105, 20, { align: 'center' });
+        
+        // Informations
+        doc.setFontSize(12);
+        let y = 40;
+        
+        const patientAge = suivi.agePatient? `, ${suivi.agePatient} ans` : '';
+        
+        doc.text(`Date: ${new Date(suivi.datePrescrire).toLocaleDateString()}`, 20, y);
+        y += 10;
+        doc.text(`Patient: ${suivi.nomPatient || ''} ${suivi.prenomPatient || ''} ${patientAge}`, 20, y);
+        y += 10;
+        doc.text(`Praticien: ${suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}`, 20, y);
+        y += 10;
+        doc.text(`Compte rendu: ${suivi.compteRendu || 'Non spécifié'}`, 20, y);
+        y += 10;
+        doc.text(`Prescription: ${suivi.typePrescrire} - ${suivi.posologie}`, 20, y);
+        
+        // Enregistrer le PDF
+        doc.save(`suivi_${suivi.idPrescrire}_${new Date(suivi.datePrescrire).toISOString().split('T')[0]}.pdf`);
     };
 
     if (loading) {
@@ -211,7 +286,7 @@ const ListSuivi = () => {
                                     suivis.map((suivi) => (
                                         <tr key={suivi.idPrescrire}>
                                             <td>{new Date(suivi.datePrescrire).toLocaleDateString()}</td>
-                                            <td>{suivi.nomPatient} &nbsp; {suivi.prenomPatient} </td>
+                                            <td> {suivi.prenomPatient} </td>
                                             <td>{suivi.prenomPraticien ? `Dr. ${suivi.prenomPraticien} (${suivi.specialite})` : 'Inconnu'}</td>
                                             <td>{suivi.compteRendu || '-'}</td>
                                             <td>{suivi.typePrescrire}: {suivi.posologie}</td>

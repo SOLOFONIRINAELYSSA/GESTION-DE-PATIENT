@@ -47,12 +47,16 @@ export const getAll = async (req, res) => {
       SELECT 
         p.*,
         c.dateConsult,
+        ag.age AS agePatient,
+        patt.nom AS nomPatient,
         pat.prenom AS prenomPatient,
         pra.prenom AS prenomPraticien
       FROM prescriptions p
       JOIN consultations c ON p.idConsult = c.idConsult
       JOIN rendezVous r ON c.idRdv = r.idRdv
       JOIN patients pat ON r.cinPatient = pat.cinPatient
+      JOIN patients patt ON r.cinPatient = patt.cinPatient
+      JOIN patients ag ON r.cinPatient = ag.cinPatient
       JOIN praticiens pra ON r.cinPraticien = pra.cinPraticien
       ORDER BY p.datePrescrire DESC
     `);
@@ -321,17 +325,38 @@ export const create = async (req, res) => {
     const dateConsult = new Date(consultation[0].dateConsult);
     const prescriptionDate = new Date(datePrescrire || new Date());
 
+    // Normalisation des dates (ignorer l'heure pour la comparaison)
+    const consultDateOnly = new Date(
+      dateConsult.getFullYear(),
+      dateConsult.getMonth(),
+      dateConsult.getDate()
+    );
+    
+    const prescriptionDateOnly = new Date(
+      prescriptionDate.getFullYear(),
+      prescriptionDate.getMonth(),
+      prescriptionDate.getDate()
+    );
+
     // Validation que la date de prescription n'est pas antérieure à la date de consultation
-    if (prescriptionDate < dateConsult) {
+    if (prescriptionDateOnly < consultDateOnly) {
       return res.status(400).json(
-        formatResponse(null, "La date de prescription ne peut pas être antérieure à la date de consultation", false)
+        formatResponse(
+          null, 
+          "La date de prescription ne peut pas être antérieure à la date de consultation", 
+          false
+        )
       );
     }
 
-    // Création de la prescription
+    // Création de la prescription avec l'heure actuelle si non fournie
+    const finalPrescriptionDate = datePrescrire 
+      ? new Date(prescriptionDate) 
+      : new Date(); // Date actuelle avec heure/minute
+
     const [result] = await pool.query(
       "INSERT INTO prescriptions (idConsult, typePrescrire, posologie, datePrescrire) VALUES (?, ?, ?, ?)",
-      [idConsult, typePrescrire, posologie, prescriptionDate]
+      [idConsult, typePrescrire, posologie, finalPrescriptionDate]
     );
 
     return res.status(201).json(

@@ -239,11 +239,11 @@ const ListRdv = () => {
             <span className="text">AJOUTER</span>
           </a>
         </div>
-
+x
         <div className="table-date">
           <div className="orber">
             <div className="head">
-              <h3 style={{ color: '#bdb9b9' }}>Derniers rendez-vous</h3>
+              <h3 style={{ color: '#bdb9b9' }}>Derniers rendez-vous </h3>
               <i className='bx bx-search icon-tbl'></i>
               <i className='bx bx-filter icon-tbl'></i>
             </div>
@@ -278,8 +278,8 @@ const ListRdv = () => {
                           {statusUpdateId === rdv.idRdv && <span className="status-loading">...</span>}
                         </span>
                       </td>
-                      {/* <td>{rdv.idRdvParent}</td> */}
-                      <td>Dr. {praticiens[rdv.idRdvParent] || null}</td>
+                      {/* <td>Dr. {praticiens[rdv.idRdvParent] || null}</td> */}
+                      <td>{(praticiens[rdv.idRdvParent] && "Dr. " + praticiens[rdv.idRdvParent]) || "aucun rendez-vous spécial"}</td>
                       <td className='td-tbn-actions'>
                         <button 
                           className="edit-btn"
