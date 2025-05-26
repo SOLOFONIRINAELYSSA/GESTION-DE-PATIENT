@@ -7,39 +7,6 @@ const formatResponse = (data, message = '', success = true) => ({
   count: Array.isArray(data) ? data.length : 1
 });
 
-// export const create = async (req, res) => {
-//   try {
-//     const { idConsult, typePrescrire, posologie, datePrescrire } = req.body;
-
-//     if (!idConsult || !typePrescrire || !posologie) {
-//       return res.status(400).json(
-//         formatResponse(null, "idConsult, typePrescrire et posologie sont obligatoires", false)
-//       );
-//     }
-
-//     const [result] = await pool.query(
-//       "INSERT INTO prescriptions (idConsult, typePrescrire, posologie, datePrescrire) VALUES (?, ?, ?, ?)",
-//       [idConsult, typePrescrire, posologie, datePrescrire || new Date()]
-//     );
-
-//     return res.status(201).json(
-//       formatResponse({ idPrescrire: result.insertId }, "Prescription créée avec succès")
-//     );
-
-//   } catch (error) {
-//     console.error("Erreur création prescription:", error);
-    
-//     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-//       return res.status(400).json(
-//         formatResponse(null, "Consultation non trouvée", false)
-//       );
-//     }
-    
-//     return res.status(500).json(
-//       formatResponse(null, "Erreur serveur lors de la création", false)
-//     );
-//   }
-// };
 
 export const getAll = async (req, res) => {
   try {
@@ -80,7 +47,6 @@ export const getOne = async (req, res) => {
     const [prescription] = await pool.query(`
       SELECT 
         p.*,
-        c.dateConsult,
         pat.nom AS nomPatient,
         pat.prenom AS prenomPatient
       FROM prescriptions p
@@ -304,9 +270,9 @@ export const create = async (req, res) => {
     const { idConsult, typePrescrire, posologie, datePrescrire } = req.body;
 
     // Validation des champs obligatoires
-    if (!idConsult || !typePrescrire || !posologie) {
+    if (!idConsult || !typePrescrire ) {
       return res.status(400).json(
-        formatResponse(null, "idConsult, typePrescrire et posologie sont obligatoires", false)
+        formatResponse(null, "idConsult, typePrescrire sont obligatoires", false)
       );
     }
 

@@ -258,9 +258,15 @@ const SidBar = () => {
             </a>
           </li>
           <li className={activeMenuItem === 'Analytics' ? 'active' : ''}>
-            <a href="/ajoutRdv" onClick={() => handleMenuItemClick('Analytics')}>
+            <a href="/listRdv" onClick={() => handleMenuItemClick('Analytics')}>
               <i className='bx bx-calendar-check'></i>  
               <span className="text">Rendez-vous</span>
+            </a>
+          </li>
+          <li className={activeMenuItem === 'Analytic' ? 'active' : ''}>
+            <a href="/listRdvExamen" onClick={() => handleMenuItemClick('Analytic')}>
+              <i className='bx bx-calendar-check'></i>  
+              <span className="text">Rendez-vous pour l'examen</span>
             </a>
           </li>
           <li className={activeMenuItem === 'Consultation' ? 'active' : ''}>
@@ -279,6 +285,12 @@ const SidBar = () => {
             <a href="/listSuivi" onClick={() => handleMenuItemClick('Suivi')}>
               <i className='bx bx-list-check'></i>  
               <span className="text">Liste de suivi</span>
+            </a>
+          </li>
+          <li className={activeMenuItem === 'Examen' ? 'active' : ''}>
+            <a href="/listExamen" onClick={() => handleMenuItemClick('Examen')}>
+              <i className='bx bx-first-aid'></i>  
+              <span className="text">Examen médical</span>
             </a>
           </li>
         </ul>

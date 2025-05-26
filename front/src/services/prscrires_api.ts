@@ -7,7 +7,7 @@ export interface Prescription {
     idPrescrire: number;
     idConsult: number;
     typePrescrire: string;
-    posologie: string;
+    posologie?: string;
     datePrescrire: string;
     dateConsult?: string;
     prenomPraticien?: string;
@@ -23,39 +23,19 @@ interface ApiResponse<T> {
     count?: number;
 }
 
-// export async function createPrescription(data: Omit<Prescription, 'idPrescrire'>): Promise<Prescription> {
-//     try {
-//         const response = await axios.post<ApiResponse<Prescription>>(
-//             `${API_BASE_URL}/prescrire`,
-//             data
-//         );
-        
-//         if (response.data.success) {
-//             return response.data.data;
-//         }
-//         throw new Error(response.data.message || "Erreur lors de la création");
-        
-//     } catch (error) {
-//         if (axios.isAxiosError(error)) {
-//             const errorMsg = error.response?.data?.message || 
-//                             error.response?.data?.error ||
-//                             "Erreur lors de la création de la prescription";
-//             throw new Error(errorMsg);
-//         }
-//         throw new Error("Erreur inconnue lors de la communication avec le serveur");
-//     }
-// }
+
 export async function createPrescription(data: Omit<Prescription, 'idPrescrire'>): Promise<Prescription> {
     try {
         // Validation côté client (optionnel mais recommandé)
-        if (!data.idConsult || !data.typePrescrire || !data.posologie) {
-            throw new Error("idConsult, typePrescrire et posologie sont obligatoires");
+        if (!data.idConsult || !data.typePrescrire) { // Retirer posologie des champs obligatoires
+            throw new Error("idConsult et typePrescrire sont obligatoires");
         }
 
         const response = await axios.post<ApiResponse<Prescription>>(
             `${API_BASE_URL}/prescrire`,
             {
                 ...data,
+                posologie: data.posologie || "", // Ajouter une valeur par défaut si vide
                 datePrescrire: data.datePrescrire || new Date().toISOString()
             }
         );

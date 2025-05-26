@@ -9,18 +9,26 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import '../ContainerPracticien/AjoutPracticien.css';
+import './AjoutPracticien.css'
 
 const ListPracticien = () => {
   const [praticiens, setPraticiens] = useState<Praticien[]>([]);
+  const [filteredPraticiens, setFilteredPraticiens] = useState<Praticien[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [praticienToDelete, setPraticienToDelete] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearchInput, setShowSearchInput] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPraticiens();
   }, []);
+
+  useEffect(() => {
+    setFilteredPraticiens(praticiens);
+  }, [praticiens]);
 
   const fetchPraticiens = async () => {
     try {
@@ -32,6 +40,26 @@ const ListPracticien = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (term.trim() === '') {
+      setFilteredPraticiens(praticiens);
+      return;
+    }
+
+    const filtered = praticiens.filter(praticien => {
+      const lowerTerm = term.toLowerCase();
+      return (
+        praticien.cinPraticien.toLowerCase().includes(lowerTerm) ||
+        praticien.nom.toLowerCase().includes(lowerTerm) ||
+        praticien.prenom.toLowerCase().includes(lowerTerm) ||
+        (praticien.specialite && praticien.specialite.toLowerCase().includes(lowerTerm))
+      );
+    });
+
+    setFilteredPraticiens(filtered);
   };
 
   const handleDeleteClick = (cinPraticien: string) => {
@@ -105,8 +133,24 @@ const ListPracticien = () => {
           <div className="orber">
             <div className="head">
               <h3 style={{ color: '#bdb9b9' }}>Détail des praticiens</h3>
-              <i className='bx bx-search icon-tbl'></i>
-              <i className='bx bx-filter icon-tbl'></i>
+              <div className="search-container">
+                {showSearchInput && (
+                  <input
+                    type="text"
+                    placeholder="Rechercher par CIN, nom, prénom ou spécialité..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="search-input"
+                    autoFocus
+                  />
+                )}
+                <i 
+                  className='bx bx-search icon-tbl' 
+                  onClick={() => setShowSearchInput(!showSearchInput)}
+                  style={{ cursor: 'pointer' }}
+                ></i>
+                <i className='bx bx-filter icon-tbl'></i>
+              </div>
             </div>
             
             <table>
@@ -118,13 +162,13 @@ const ListPracticien = () => {
                   <th>Téléphone</th>
                   <th>Email</th>
                   <th>Spécialité</th>
-                  <th>Actions</th>
+                  <th className='th'>Actions</th>
                 </tr>
               </thead>
               
               <tbody className="tbody">
-                {praticiens.length > 0 ? (
-                  praticiens.map((praticien) => (
+                {filteredPraticiens.length > 0 ? (
+                  filteredPraticiens.map((praticien) => (
                     <tr key={praticien.cinPraticien}>
                       <td>{praticien.cinPraticien}</td>
                       <td>{praticien.nom}</td>
@@ -151,7 +195,7 @@ const ListPracticien = () => {
                 ) : (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center' }}>
-                      Aucun praticien trouvé
+                      {searchTerm ? 'Aucun praticien ne correspond à votre recherche' : 'Aucun praticien trouvé'}
                     </td>
                   </tr>
                 )}
@@ -174,7 +218,6 @@ const ListPracticien = () => {
         theme="colored"
       />
 
-      {/* Dialog de confirmation de suppression */}
       <Dialog
         open={openDeleteDialog}
         onClose={handleCancelDelete}

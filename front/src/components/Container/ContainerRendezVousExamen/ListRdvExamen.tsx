@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit } from 'react-icons/fa';
-import { RendezVous, getAllRendezVous, deleteRendezVous, updateRendezVousStatus } from '../../../services/rendezVous_api';
+import { RendezVous, getAllRendezVousParticulier, deleteRendezVous, updateRendezVousStatus } from '../../../services/rendezVous_api';
 import { getAllPatients, Patient } from '../../../services/patients_api';
 import { getAllPraticiens, Praticien } from '../../../services/praticiens_api';
 import { ToastContainer, toast } from 'react-toastify';
@@ -12,91 +12,85 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import '../../Container/ContainerRendezVous/ContainerRdv.css';
 
-const ListRdv = () => {
+const ListRdvExamen = () => {
   const [rendezVous, setRendezVous] = useState<RendezVous[]>([]);
-  const [filteredRendezVous, setFilteredRendezVous] = useState<RendezVous[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [rdvToDelete, setRdvToDelete] = useState<number | null>(null);
   const [statusUpdateId, setStatusUpdateId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showSearchInput, setShowSearchInput] = useState(false);
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Record<string, string>>({});
   const [praticiens, setPraticiens] = useState<Record<string, string>>({});
-  const [patientsFull, setPatientsFull] = useState<Patient[]>([]);
-  const [praticiensFull, setPraticiensFull] = useState<Praticien[]>([]);
+
+  // useEffect(() => {
+  //   fetchRendezVous();
+  //   loadNames();
+  // }, []);
 
   useEffect(() => {
     const loadAllData = async () => {
       try {
+        // 1. Charger les rendez-vous et les données associées en parallèle
         const [rdvData, patientsData, praticiensData] = await Promise.all([
-          getAllRendezVous(),
-          getAllPatients(),
-          getAllPraticiens()
+          fetchRendezVous(),      // Vos rendez-vous existants
+          getAllPatients(),       // Liste des patients
+          getAllPraticiens()      // Liste des praticiens
         ]);
-
-        setRendezVous(rdvData);
-        setFilteredRendezVous(rdvData);
-        setPatientsFull(patientsData);
-        setPraticiensFull(praticiensData);
-
-        const patientsMap = patientsData.reduce((acc, patient) => {
-          acc[patient.cinPatient] = `${patient.prenom} ${patient.nom}`;
-          return acc;
-        }, {} as Record<string, string>);
-
-        const praticiensMap = praticiensData.reduce((acc, praticien) => {
-          acc[praticien.cinPraticien] = `${praticien.prenom} ${praticien.nom}`;
-          return acc;
-        }, {} as Record<string, string>);
-
-        setPatients(patientsMap);
-        setPraticiens(praticiensMap);
-        setLoading(false);
+  
+        // 2. Mettre à jour les états
+        // (Adaptez selon comment vous gérez les rendez-vous)
+        // setRendezVous(rdvData); 
+        setPatients(patientsData);
+        setPraticiens(praticiensData);
+  
+        // 3. Charger les noms si nécessaire (fonction à définir)
+        await loadNames(patientsData, praticiensData);
+  
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Erreur inconnue');
-        toast.error('Erreur lors du chargement des données');
-        setLoading(false);
+        console.error("Erreur lors du chargement des données:", error);
+        // Ajoutez un toast ou une notification d'erreur si nécessaire
+        // toast.error("Erreur lors du chargement des données");
       }
     };
-
+  
     loadAllData();
+    loadNames();
   }, []);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (term.trim() === '') {
-      setFilteredRendezVous(rendezVous);
-      return;
+  const loadNames = async () => {
+    try {
+      // Supposons que vous avez des services pour récupérer les noms
+      const patientsData = await getAllPatients(); // À implémenter
+      const praticiensData = await getAllPraticiens(); // À implémenter
+      
+      const patientsMap = patientsData.reduce((acc, patient) => {
+        acc[patient.cinPatient] = patient.prenom;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      const praticiensMap = praticiensData.reduce((acc, praticien) => {
+        acc[praticien.cinPraticien] = praticien.prenom;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setPatients(patientsMap);
+      setPraticiens(praticiensMap);
+    } catch (error) {
+      console.error("Erreur lors du chargement des noms", error);
     }
+  };
 
-    const lowerTerm = term.toLowerCase();
-    
-    const filtered = rendezVous.filter(rdv => {
-      // Recherche par patient
-      const patientName = patients[rdv.cinPatient]?.toLowerCase() || '';
-      const patientMatch = patientName.includes(lowerTerm);
-      
-      // Recherche par praticien
-      const praticienName = praticiens[rdv.cinPraticien]?.toLowerCase() || '';
-      const praticienMatch = praticienName.includes(lowerTerm);
-      
-      // Recherche par date (format: jj/mm/aaaa)
-      const date = new Date(rdv.dateHeure);
-      const dateStr = date.toLocaleDateString('fr-FR');
-      const dateMatch = dateStr.includes(lowerTerm);
-      
-      // Recherche par statut
-      const statutStr = rdv.statut === 'confirme' ? 'confirmé' : 
-                       rdv.statut === 'annule' ? 'annulé' : 'en attente';
-      const statutMatch = statutStr.includes(lowerTerm);
-
-      return patientMatch || praticienMatch || dateMatch || statutMatch;
-    });
-
-    setFilteredRendezVous(filtered);
+  const fetchRendezVous = async () => {
+    try {
+      const data = await getAllRendezVousParticulier();
+      setRendezVous(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      toast.error('Erreur lors du chargement des rendez-vous');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteClick = (idRdv: number) => {
@@ -114,9 +108,7 @@ const ListRdv = () => {
       try {
         await deleteRendezVous(rdvToDelete);
         toast.success('Rendez-vous supprimé avec succès');
-        const data = await getAllRendezVous();
-        setRendezVous(data);
-        setFilteredRendezVous(data);
+        fetchRendezVous();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression');
       } finally {
@@ -127,10 +119,18 @@ const ListRdv = () => {
   };
 
   const handleEdit = (rdv: RendezVous) => {
+    console.log('RDV à éditer:', rdv);
+    
     try {
-      const patientComplet = patientsFull.find(p => p.cinPatient === rdv.cinPatient);
-      const praticienComplet = praticiensFull.find(p => p.cinPraticien === rdv.cinPraticien);
-
+      // 1. Vérifier et initialiser patients et praticiens
+      const patientsList = Array.isArray(patients) ? patients : [];
+      const praticiensList = Array.isArray(praticiens) ? praticiens : [];
+  
+      // 2. Trouver les informations complètes (avec vérifications)
+      const patientComplet = patientsList.find((p: Patient) => p.cinPatient === rdv.cinPatient);
+      const praticienComplet = praticiensList.find((p: Praticien) => p.cinPraticien === rdv.cinPraticien);
+  
+      // 3. Préparer l'objet à transmettre (version simplifiée et sécurisée)
       const rdvAEditer = {
         ...rdv,
         idRdvParent: rdv.idRdvParent || null,
@@ -148,17 +148,24 @@ const ListRdv = () => {
           }
         })
       };
-
-      navigate('/ajoutRdv', { state: { rdv: rdvAEditer } });
+  
+      // 4. Navigation
+      navigate('/ajoutRdvExamen', { 
+        state: { 
+          rdv: rdvAEditer 
+        } 
+      });
+      
     } catch (error) {
       console.error("Erreur lors de l'édition:", error);
-      toast.error("Erreur lors de l'ouverture de l'édition");
+      // Vous pouvez aussi ajouter une notification à l'utilisateur ici
     }
   };
 
   const handleStatusChange = async (idRdv: number, currentStatus: 'en_attente' | 'confirme' | 'annule') => {
     setStatusUpdateId(idRdv);
     
+    // Déterminer le nouveau statut en fonction du statut actuel
     let nextStatus: 'en_attente' | 'confirme' | 'annule';
     if (currentStatus === 'en_attente') nextStatus = 'confirme';
     else if (currentStatus === 'confirme') nextStatus = 'annule';
@@ -167,9 +174,7 @@ const ListRdv = () => {
     try {
       await updateRendezVousStatus(idRdv, nextStatus);
       toast.success(`Statut du rendez-vous mis à jour: ${nextStatus}`);
-      const data = await getAllRendezVous();
-      setRendezVous(data);
-      setFilteredRendezVous(data);
+      fetchRendezVous();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur lors de la mise à jour du statut');
     } finally {
@@ -222,10 +227,10 @@ const ListRdv = () => {
             <ul className="breadcrumb">
               <li><a href="#">Rendez-vous</a></li>
               <li><i className='bx bx-chevron-right'></i></li>
-              <li><a className="active" href="/listRdv">Liste des derniers rendez-vous</a></li>
+              <li><a className="active" href="/listRdvExamen">Liste des derniers rendez-vous</a></li>
             </ul>
           </div>
-          <a href="/ajoutRdv" className="btn-download">
+          <a href="/ajoutRdvExamen" className="btn-download">
             <i className='bx bx-plus'></i>
             <span className="text">AJOUTER</span>
           </a>
@@ -233,25 +238,9 @@ const ListRdv = () => {
         <div className="table-date">
           <div className="orber">
             <div className="head">
-              <h3 style={{ color: '#bdb9b9' }}>Derniers rendez-vous</h3>
-              <div className="search-container">
-                {showSearchInput && (
-                  <input
-                    type="text"
-                    placeholder="Rechercher par patient, praticien, date ou statut..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="search-input"
-                    autoFocus
-                  />
-                )}
-                <i 
-                  className='bx bx-search icon-tbl' 
-                  onClick={() => setShowSearchInput(!showSearchInput)}
-                  style={{ cursor: 'pointer' }}
-                ></i>
-                <a href="/listRdv"><i className='bx bx-filter icon-tbl'></i></a>
-              </div>
+              <h3 style={{ color: '#bdb9b9' }}>Derniers rendez-vous </h3>
+              <i className='bx bx-search icon-tbl'></i>
+              <i className='bx bx-filter icon-tbl'></i>
             </div>
             
             <table>
@@ -261,13 +250,14 @@ const ListRdv = () => {
                   <th>Praticien</th>
                   <th>Date et heure</th>
                   <th>Statut</th>
+                  <th>Praticien particulier</th>
                   <th className='th'>Actions</th>
                 </tr>
               </thead>
               
               <tbody className="tbody">
-                {filteredRendezVous.length > 0 ? (
-                  filteredRendezVous.map((rdv) => (
+                {rendezVous.length > 0 ? (
+                  rendezVous.map((rdv) => (
                     <tr key={rdv.idRdv}>
                       <td>{patients[rdv.cinPatient] || rdv.cinPatient}</td>
                       <td>Dr. {praticiens[rdv.cinPraticien] || rdv.cinPraticien}</td>
@@ -282,6 +272,15 @@ const ListRdv = () => {
                            rdv.statut === 'annule' ? 'Annulé' : 'En attente'}
                           {statusUpdateId === rdv.idRdv && <span className="status-loading">...</span>}
                         </span>
+                      </td>
+                      <td>
+                        {rdv.nomPraticienParent && rdv.prenomPraticienParent
+                          ? `Dr. ${rdv.prenomPraticienParent} ${rdv.nomPraticienParent}${
+                              rdv.specialitePraticienParent ? ` (${rdv.specialitePraticienParent})` : ''
+                            }`
+                          : rdv.idRdvParent && praticiens[rdv.idRdvParent]
+                          ? `Dr. ${praticiens[rdv.idRdvParent]}`
+                          : "Aucun praticien particulier"}
                       </td>
                       <td className='td-tbn-actions'>
                         <button 
@@ -302,7 +301,7 @@ const ListRdv = () => {
                 ) : (
                   <tr>
                     <td colSpan={5} style={{ textAlign: 'center' }}>
-                      {searchTerm ? 'Aucun rendez-vous ne correspond à votre recherche' : 'Aucun rendez-vous trouvé'}
+                      Aucun rendez-vous trouvé
                     </td>
                   </tr>
                 )}
@@ -354,4 +353,4 @@ const ListRdv = () => {
   );
 };
 
-export default ListRdv;
+export default ListRdvExamen;

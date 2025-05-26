@@ -1,0 +1,88 @@
+:root{
+    --bg1: #fff;
+    --bg2: #e7e7e73c;
+    --txt: rgba(22, 20, 20, 0.795);
+}
+.dark-theme-variables{
+    --bg1: rgb(13, 16, 22) !important;
+    --bg2: rgba(29, 39, 58, 0.322) !important;
+    --txt: #ffffffb6 !important;
+    
+}
+
+
+.place-table{
+    max-height: 200px !important;
+}
+
+
+.table-dashbord {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 20px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    max-height: 20px !important;
+}
+
+.thead-dashbord {
+  background-color: #4a6cf7 !important;
+  color: white !important;
+}
+
+.tbody-dashbord {
+  background-color: var(--bg1) !important;
+}
+
+.tr-dashbord {
+  transition: all 0.3s ease !important;
+}
+
+.thead-dashbord .tr-dashbord th {
+  padding: 15px 10px !important;
+  text-align: left !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  text-transform: uppercase !important;
+}
+
+.tbody-dashbord .tr-dashbord td {
+  padding: 12px 10px !important;
+  font-size: 14px !important;
+  color: var(--txt) !important;
+}
+
+.tbody-dashbord .tr-dashbord:last-child td {
+  border-bottom: none !important;
+}
+
+/* Style pour le message "Aucun patient trouvé" */
+.tbody-dashbord .-dashbord td {
+  padding: 20px !important;
+  color: var(--txt) !important;
+  font-style: italic !important;
+}
+
+/* Style alterné pour les lignes */
+.tbody-dashbord .tr-dashbord:nth-child(even) {
+  background-color: var(--bg2) !important;
+}
+
+/* Style pour les icônes dans l'en-tête */
+.head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 15px !important;
+}
+
+.icon-tbl {
+  font-size: 20px !important;
+  color: #4a6cf7 !important;
+  cursor: pointer !important;
+  margin-left: 15px !important;
+}
+
+.icon-tbl:hover {
+  color: #3a5bd9 !important;
+}

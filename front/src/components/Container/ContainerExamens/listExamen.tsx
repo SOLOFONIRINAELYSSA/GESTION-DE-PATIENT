@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Consultation, getAllConsultations, deleteConsultation } from '../../../services/concultations_api';
+import { Examen, getAllExamens, deleteExamen, getExamenById } from '../../../services/examens_api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Dialog from '@mui/material/Dialog';
@@ -7,103 +7,107 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
-import './ContainerConsultation.css'
+import './examen.css'
 
-const ListConsultation = () => {
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [filteredConsultations, setFilteredConsultations] = useState<Consultation[]>([]);
+const ListExamen = () => {
+  const [examens, setExamens] = useState<Examen[]>([]);
+  const [filteredExamens, setFilteredExamens] = useState<Examen[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [consultationToDelete, setConsultationToDelete] = useState<number | null>(null);
+  const [examenToDelete, setExamenToDelete] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchInput, setShowSearchInput] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchConsultations();
+    fetchExamens();
   }, []);
 
   useEffect(() => {
-    setFilteredConsultations(consultations);
-  }, [consultations]);
+    setFilteredExamens(examens);
+  }, [examens]);
 
-  const fetchConsultations = async () => {
+  const fetchExamens = async () => {
     try {
-      const data = await getAllConsultations();
-      setConsultations(data);
+      const data = await getAllExamens();
+      setExamens(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erreur lors de la récupération des consultations');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la récupération des examens');
     }
   };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     if (term.trim() === '') {
-      setFilteredConsultations(consultations);
+      setFilteredExamens(examens);
       return;
     }
 
     const lowerTerm = term.toLowerCase();
     
-    const filtered = consultations.filter(consultation => {
-      // Recherche par date (format: jj/mm/aaaa)
-      const dateStr = formatDate(consultation.dateConsult).toLowerCase();
+    const filtered = examens.filter(examen => {
+      // Recherche par type d'examen
+      const typeMatch = examen.typeExamen?.toLowerCase().includes(lowerTerm) || false;
+      
+      // Recherche par date de réalisation (format: jj/mm/aaaa)
+      const dateStr = formatDate(examen.dateRealisation).toLowerCase();
       const dateMatch = dateStr.includes(lowerTerm);
       
-      // Recherche par compte rendu
-      const compteRenduMatch = consultation.compteRendu?.toLowerCase().includes(lowerTerm) || false;
+      // Recherche par statut
+      const statusStr = examen.statut === 'prescrit' ? 'prescrit' :
+                       examen.statut === 'en_cours' ? 'en cours' :
+                       examen.statut === 'termine' ? 'terminé' :
+                       examen.statut === 'annule' ? 'annulé' : '';
+      const statusMatch = statusStr.includes(lowerTerm);
       
-      // Recherche par nom du praticien
-      const praticienMatch = consultation.prenomPraticien?.toLowerCase().includes(lowerTerm) || false;
+      // Recherche par résultat
+      const resultMatch = examen.resultat?.toLowerCase().includes(lowerTerm) || false;
+      
+      // Recherche par laboratoire
+      const labMatch = examen.laboratoire?.toLowerCase().includes(lowerTerm) || false;
 
-      return dateMatch || compteRenduMatch || praticienMatch;
+      return typeMatch || dateMatch || statusMatch || resultMatch || labMatch;
     });
 
-    setFilteredConsultations(filtered);
+    setFilteredExamens(filtered);
   };
 
-  const handleDeleteClick = (idConsult: number) => {
-    setConsultationToDelete(idConsult);
+  const handleDeleteClick = (idExamen: number) => {
+    setExamenToDelete(idExamen);
     setOpenDeleteDialog(true);
   };
 
   const handleCancelDelete = () => {
     setOpenDeleteDialog(false);
-    setConsultationToDelete(null);
+    setExamenToDelete(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (consultationToDelete) {
+    if (examenToDelete) {
       try {
-        await deleteConsultation(consultationToDelete);
-        toast.success('Consultation supprimée avec succès');
-        fetchConsultations();
+        await deleteExamen(examenToDelete);
+        toast.success('Examen supprimé avec succès');
+        fetchExamens();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression');
       } finally {
         setOpenDeleteDialog(false);
-        setConsultationToDelete(null);
+        setExamenToDelete(null);
       }
     }
   };
 
-  const handleEdit = (consultation: Consultation) => {
-    const consultationToEdit = {
-      ...consultation,
-      idRdv: consultation.idRdv || 0,
-      dateConsult: consultation.dateConsult || '',
-      compteRendu: consultation.compteRendu || ''
-    };
-    
-    navigate('/ajoutConsultation', { 
-      state: { 
-        consultation: consultationToEdit,
-        rendezVous: {
-          idRdv: consultation.idRdv,
-          dateHeure: consultation.dateConsult,
-          prenomPraticien: consultation.prenomPraticien
-        }
-      } 
-    });
+  const handleEdit = async (idExamen: number) => {
+    try {
+      const examen = await getExamenById(idExamen);
+      navigate('/ajoutExamen', { 
+        state: { 
+          examen: examen,
+          isEditMode: true
+        } 
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la récupération de l\'examen');
+    }
   };
 
   const formatDate = (dateString: string | undefined | null): string => {
@@ -123,19 +127,34 @@ const ListConsultation = () => {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'prescrit':
+        return <span className="status-badge prescrit">Prescrit</span>;
+      case 'en_cours':
+        return <span className="status-badge en-cours">En cours</span>;
+      case 'termine':
+        return <span className="status-badge termine">Terminé</span>;
+      case 'annule':
+        return <span className="status-badge annule">Annulé</span>;
+      default:
+        return <span className="status-badge">{status}</span>;
+    }
+  };
+
   return (
     <section id="content">
       <main>
         <div className="head-title">
           <div className="left">
-            <h1 className='h1' style={{ color: '#bdb9b9' }}>Les dernieres consultations</h1>
+            <h1 className='h1' style={{ color: '#bdb9b9' }}>Examens médicaux des patients</h1>
             <ul className="breadcrumb">
-              <li><a href="#">Consultation</a></li>
+              <li><a href="#">Examen</a></li>
               <li><i className='bx bx-chevron-right'></i></li>
-              <li><a className="active" href="/listConsultation">Liste des consultations</a></li>
+              <li><a className="active" href="/listExamen">Liste des examens</a></li>
             </ul>
           </div>
-          <a href="/ajoutConsultation" className="btn-download">
+          <a href="/ajoutExamen" className="btn-download">
             <i className='bx bx-plus'></i>
             <span className="text">AJOUTER</span>
           </a>
@@ -144,12 +163,12 @@ const ListConsultation = () => {
         <div className="table-date">
           <div className="orber">
             <div className="head">
-              <h3 style={{ color: '#bdb9b9' }}>Liste des consultations</h3>
+              <h3 style={{ color: '#bdb9b9' }}>Liste des examens</h3>
               <div className="search-container">
                 {showSearchInput && (
                   <input
                     type="text"
-                    placeholder="Rechercher par date, compte rendu ou praticien..."
+                    placeholder="Rechercher par type, date, statut, résultat ou laboratoire..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="search-input"
@@ -167,34 +186,52 @@ const ListConsultation = () => {
             <table>
               <thead className="thead">
                 <tr>
-                  <th>Date Consultation</th>
-                  <th>Rendez-vous</th>
-                  <th>Compte rendu</th>
+                  <th>Type d'examen</th>
+                  <th>Date de réalisation</th>
+                  <th>Statut</th>
+                  <th>Résultat</th>
+                  <th>Image</th>
+                  <th>Laboratoire</th>
                   <th className='th'>Actions</th>
                 </tr>
               </thead>
               <tbody className="tbody">
-                {filteredConsultations.length > 0 ? (
-                  filteredConsultations.map((consultation) => (
-                    <tr key={consultation.idConsult}>
-                      <td>{formatDate(consultation.dateConsult)}</td>
-                      <td>Dr. {consultation.prenomPraticien || 'Non spécifié'}</td>
-                      <td>{consultation.compteRendu ? 
-                        (consultation.compteRendu.length > 50 
-                          ? `${consultation.compteRendu.substring(0, 50)}...` 
-                          : consultation.compteRendu) 
-                        : '-'}
+                {filteredExamens.length > 0 ? (
+                  filteredExamens.map((examen) => (
+                    <tr key={examen.idExamen}>
+                      <td>{examen.typeExamen}</td>
+                      <td>{formatDate(examen.dateRealisation)}</td>
+                      <td>{getStatusBadge(examen.statut)}</td>
+                      <td>
+                        {examen.resultat ? 
+                          (examen.resultat.length > 30 
+                            ? `${examen.resultat.substring(0, 30)}...` 
+                            : examen.resultat) 
+                          : 'pas encore du resultat'}
                       </td>
+                      <td>
+                        {examen.imageUrl ? (
+                            <img 
+                            src={examen.imageUrl} 
+                            alt={`Examen ${examen.typeExamen}`}
+                            className="examen-image"
+                            onClick={() => window.open(examen.imageUrl, '_blank')}
+                            />
+                        ) : (
+                            <span className="no-image">Aucune image</span>
+                        )}
+                      </td>
+                      <td>{examen.laboratoire || '-'}</td>
                       <td className='td-tbn-actions'>
                         <button 
                           className="edit-btn"
-                          onClick={() => handleEdit(consultation)}
+                          onClick={() => handleEdit(examen.idExamen)}
                         >
                           <i className='bx bx-edit'></i>
                         </button>
                         <button 
                           className="delete-btn"
-                          onClick={() => handleDeleteClick(consultation.idConsult)}
+                          onClick={() => handleDeleteClick(examen.idExamen)}
                         >
                           <i className='bx bx-trash'></i>
                         </button>
@@ -203,8 +240,8 @@ const ListConsultation = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center' }}>
-                      {searchTerm ? 'Aucune consultation ne correspond à votre recherche' : 'Aucune consultation trouvée'}
+                    <td colSpan={7} style={{ textAlign: 'center' }}>
+                      {searchTerm ? 'Aucun examen ne correspond à votre recherche' : 'Aucun examen trouvé'}
                     </td>
                   </tr>
                 )}
@@ -241,7 +278,7 @@ const ListConsultation = () => {
               <path d="M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
-          Êtes-vous sûr de vouloir supprimer cette consultation ?
+          Êtes-vous sûr de vouloir supprimer cet examen ?
         </DialogTitle>
         <DialogActions>
           <Button className="cancel-btn" onClick={handleCancelDelete}>
@@ -256,4 +293,4 @@ const ListConsultation = () => {
   );
 }
 
-export default ListConsultation;
+export default ListExamen;

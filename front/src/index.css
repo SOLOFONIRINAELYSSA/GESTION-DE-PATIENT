@@ -25,6 +25,11 @@
     
 }
 
+.th{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 /* Fotter */
 .footer{
@@ -319,4 +324,26 @@
     margin: 10px 0 20px;
     border-radius: 5px;
     color: var(--color-txt-dans-input-rech);
+}
+
+/* *************************** */
+/* Dans votre fichier CSS */
+.examen-image {
+  max-width: 100px;
+  max-height: 60px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  object-fit: cover;
+}
+
+.examen-image:hover {
+  transform: scale(1.5);
+  z-index: 10;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.no-image {
+  color: #888;
+  font-style: italic;
 }

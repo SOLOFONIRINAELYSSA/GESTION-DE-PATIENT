@@ -14,6 +14,10 @@ import AjoutPatient from "./pages/ListPatient/ajoutPatient";
 import AjoutPrescrire from "./pages/Prescrire/AjoutPrescrire";
 import ListPrescrire from "./pages/Prescrire/ListPrescrire";
 import ListSuivi from "./pages/Suivi/ListSuivi";
+import ListExamen from "./pages/Examen/ListExamen";
+import AjoutExamen from "./pages/Examen/AjoutExamen";
+import ListRdvExamen from "./pages/RendezVousExamen/ListRdvExamen";
+import AjoutRdvExamen from "./pages/RendezVousExamen/AjoutRdvExamen";
 
 function App() {
   return (
@@ -36,6 +40,11 @@ function App() {
         <Route path="/ajoutPrescrire/:idPrescrire" element={<AjoutPrescrire />} />
         <Route path="/listPrescrire" element={<ListPrescrire />} />
         <Route path="/listSuivi" element={<ListSuivi />} />
+        <Route path="/listExamen" element={<ListExamen />} />
+        <Route path="/ajoutExamen" element={<AjoutExamen />} />
+        <Route path="/ajoutExamen/:idExamen" element={<AjoutExamen />} />
+        <Route path="/listRdvExamen" element={<ListRdvExamen />} />
+        <Route path="/ajoutRdvExamen" element={<AjoutRdvExamen />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/parametres" element={<Parametres />} />
       </Routes>

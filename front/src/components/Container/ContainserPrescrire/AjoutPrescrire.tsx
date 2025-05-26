@@ -13,7 +13,7 @@ const AjoutPrescrire = () => {
     idPrescrire: 0,
     idConsult: 0,
     typePrescrire: '',
-    posologie: '',
+    posologie: '', 
     datePrescrire: new Date().toISOString().split('T')[0]
   });
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -55,7 +55,7 @@ const AjoutPrescrire = () => {
             idPrescrire: prescription.idPrescrire,
             idConsult: prescription.idConsult, // Conserve la consultation actuelle
             typePrescrire: prescription.typePrescrire,
-            posologie: prescription.posologie,
+             posologie: prescription.posologie || '', 
             datePrescrire: formatDateForInput(prescription.datePrescrire)
           });
   
@@ -100,7 +100,7 @@ const AjoutPrescrire = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.idConsult || !formData.typePrescrire || !formData.posologie || !formData.datePrescrire) {
+    if (!formData.idConsult || !formData.typePrescrire || !formData.datePrescrire) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -110,7 +110,7 @@ const AjoutPrescrire = () => {
         idPrescrire: formData.idPrescrire || 0, // 0 pour les nouvelles prescriptions
         idConsult: formData.idConsult,
         typePrescrire: formData.typePrescrire,
-        posologie: formData.posologie,
+        posologie: formData.posologie || undefined,
         datePrescrire: formData.datePrescrire
       };
   
@@ -188,7 +188,7 @@ const AjoutPrescrire = () => {
                         }}
                         required
                         className="select-consultation"
-                        disabled={consultations.length === 0} // Toujours modifiable sauf si aucune consultation disponible
+                        disabled={consultations.length === 0} 
                       >
                         {consultations.length === 0 ? (
                           <option value="">Aucune consultation disponible</option>
@@ -236,13 +236,12 @@ const AjoutPrescrire = () => {
                     </div>
 
                     <div className="input-field-div">
-                      <label>Posologie <span className="required">*</span></label>
+                      <label>Posologie <span className=""></span></label>
                       <textarea
                         name="posologie"
                         value={formData.posologie}
                         onChange={handleChange}
                         placeholder="Détails de la posologie"
-                        required
                         rows={3}
                       />
                     </div>

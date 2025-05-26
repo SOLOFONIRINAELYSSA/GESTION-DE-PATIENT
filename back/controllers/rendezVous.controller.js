@@ -446,6 +446,127 @@ export const getAll = async (req, res) => {
   }
 };
 
+
+export const getAllParticulier = async (req, res) => {
+  try {
+    const { cinPatient, cinPraticien, statut } = req.query;
+    
+    let query = `
+      SELECT 
+        rv.idRdv,
+        rv.dateHeure AS dateHeure,
+        rv.statut AS statut,
+        pat.cinPatient,
+        pat.nom AS nomPatient,
+        pat.prenom AS prenomPatient,
+        pat.telephone,
+        prat.cinPraticien,
+        prat.nom AS nomPraticien,
+        prat.prenom AS prenomPraticien,
+        prat.specialite AS specialite,
+        prat_parent.cinPraticien AS cinPraticienParent,
+        prat_parent.nom AS nomPraticienParent,
+        prat_parent.prenom AS prenomPraticienParent,
+        prat_parent.specialite AS specialitePraticienParent
+      FROM 
+        rendezVous rv
+      JOIN patients pat ON rv.cinPatient = pat.cinPatient
+      JOIN praticiens prat ON rv.cinPraticien = prat.cinPraticien
+      JOIN praticiens prat_parent ON rv.idRdvParent = prat_parent.cinPraticien
+      WHERE rv.idRdvParent IS NOT NULL
+    `;
+    
+    
+    const conditions = [];
+    const params = [];
+
+    if (cinPatient) {
+      conditions.push("r.cinPatient = ?");
+      params.push(cinPatient);
+    }
+
+    if (cinPraticien) {
+      conditions.push("r.cinPraticien = ?");
+      params.push(cinPraticien);
+    }
+
+    if (statut) {
+      conditions.push("r.statut = ?");
+      params.push(statut);
+    }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
+
+    query += " ORDER BY rv.dateHeure DESC";
+
+    const [rendezVous] = await pool.query(query, params);
+
+    return res.status(200).json({
+      success: true,
+      count: rendezVous.length,
+      data: rendezVous
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération rendez-vous:", {
+      message: error.message,
+      code: error.code,
+      sql: error.sql
+    });
+    
+    return res.status(500).json({ 
+      success: false,
+      error: "Erreur serveur lors de la récupération",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+export const rendezVousExamens = async (req, res) => {
+    try {
+        const { cinPatient } = req.query;
+        
+        let query = `
+          SELECT DISTINCT 
+            rv.idRdv,
+            rv.cinPatient,
+            pat.nom AS nomPatient,
+            pat.prenom AS prenomPatient,
+            rv.cinPraticien,
+            prat.nom AS nomPraticien,
+            prat.prenom AS prenomPraticien,
+            prat.specialite AS specialitePraticien,
+            rv.dateHeure,
+            pr.typePrescrire AS typePrescription,
+            e.typeExamen,
+            e.statut AS statutExamen
+          FROM rendezVous rv
+          JOIN patients pat ON rv.cinPatient = pat.cinPatient
+          JOIN consultations c ON rv.idRdv = c.idRdv
+          JOIN prescriptions pr ON c.idConsult = pr.idConsult
+          JOIN examens e ON pr.idPrescrire = e.idPrescrire
+          JOIN praticiens prat ON rv.cinPraticien = prat.cinPraticien
+          WHERE pr.typePrescrire LIKE '%examen%'
+            OR pr.typePrescrire LIKE '%analyse%'
+            OR pr.typePrescrire LIKE '%radiologie%'
+        `;
+
+        if (cinPatient) {
+          query += ` AND rv.cinPatient = '${cinPatient}'`;
+        }
+
+        query += " ORDER BY rv.dateHeure DESC";
+
+        const [results] = await pool.query(query);
+        res.json({ success: true, data: results });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+      }
+};
+
 export const getOne = async (req, res) => {
   try {
     const { idRdv } = req.params;
@@ -553,6 +674,8 @@ export default {
   updateOne,
   deleteOne,
   getAll,
+  getAllParticulier,
+  rendezVousExamens,
   getOne,
   getAvailable,
   getPendingCount,

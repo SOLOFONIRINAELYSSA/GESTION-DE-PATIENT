@@ -7,13 +7,17 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
+import './prescrire.css'
 
 const ListPrescrire = () => {
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+    const [filteredPrescriptions, setFilteredPrescriptions] = useState<Prescription[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showSearchInput, setShowSearchInput] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,6 +25,7 @@ const ListPrescrire = () => {
             try {
                 const data = await getAllPrescriptions();
                 setPrescriptions(data);
+                setFilteredPrescriptions(data);
                 setLoading(false);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -30,6 +35,35 @@ const ListPrescrire = () => {
         };
         fetchPrescriptions();
     }, []);
+
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+        if (term.trim() === '') {
+            setFilteredPrescriptions(prescriptions);
+            return;
+        }
+
+        const lowerTerm = term.toLowerCase();
+        
+        const filtered = prescriptions.filter(prescription => {
+            // Recherche par date (format: jj/mm/aaaa)
+            const dateStr = new Date(prescription.datePrescrire).toLocaleDateString('fr-FR');
+            const dateMatch = dateStr.includes(lowerTerm);
+            
+            // Recherche par type de prescription
+            const typeMatch = prescription.typePrescrire?.toLowerCase().includes(lowerTerm) || false;
+            
+            // Recherche par posologie
+            const posologieMatch = prescription.posologie?.toLowerCase().includes(lowerTerm) || false;
+            
+            // Recherche par prénom du patient
+            const patientMatch = prescription.prenomPatient?.toLowerCase().includes(lowerTerm) || false;
+
+            return dateMatch || typeMatch || posologieMatch || patientMatch;
+        });
+
+        setFilteredPrescriptions(filtered);
+    };
 
     const handleDeleteClick = (idPrescrire: number) => {
         setPrescriptionToDelete(idPrescrire);
@@ -46,7 +80,9 @@ const ListPrescrire = () => {
             try {
                 await deletePrescription(prescriptionToDelete);
                 toast.success('Prescription supprimée avec succès');
-                setPrescriptions(prescriptions.filter(p => p.idPrescrire !== prescriptionToDelete));
+                const updatedPrescriptions = prescriptions.filter(p => p.idPrescrire !== prescriptionToDelete);
+                setPrescriptions(updatedPrescriptions);
+                setFilteredPrescriptions(updatedPrescriptions);
             } catch (error) {
                 toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression');
             } finally {
@@ -56,29 +92,40 @@ const ListPrescrire = () => {
         }
     };
 
-
-      const handleEdit = (prescription: Prescription) => {
-          const consultationToEdit = {
+    const handleEdit = (prescription: Prescription) => {
+        const consultationToEdit = {
             ...prescription,
             idConsult: prescription.idConsult || 0,
             datePrescrire: prescription.datePrescrire || '',
             typePrescrire: prescription.typePrescrire || '',
             posologie: prescription.posologie || ''
-          };
-          
-          navigate('/ajoutPrescrire', { 
-            state: { 
-              prescription: consultationToEdit,
-              rendezVous: {
-                idConsult: prescription.idConsult,
-                dateConsult: prescription.dateConsult,
-                prenomPatient: prescription.prenomPatient,
-                prenomPraticien: prescription.prenomPraticien
-              }
-            } 
-          });
         };
-      
+        
+        navigate('/ajoutPrescrire', { 
+            state: { 
+                prescription: consultationToEdit,
+                rendezVous: {
+                    idConsult: prescription.idConsult,
+                    dateConsult: prescription.dateConsult,
+                    prenomPatient: prescription.prenomPatient,
+                    prenomPraticien: prescription.prenomPraticien
+                }
+            } 
+        });
+    };
+
+    const formatDate = (dateString: string) => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        } catch {
+            return dateString;
+        }
+    };
 
     if (loading) {
         return (
@@ -146,8 +193,24 @@ const ListPrescrire = () => {
                     <div className="orber">
                         <div className="head">
                             <h3 style={{ color: '#bdb9b9' }}>Liste des prescriptions</h3>
-                            <i className='bx bx-search icon-tbl'></i>
-                            <i className='bx bx-filter icon-tbl'></i>
+                            <div className="search-container">
+                                {showSearchInput && (
+                                    <input
+                                        type="text"
+                                        placeholder="Rechercher par date, type, posologie ou patient..."
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        className="search-input"
+                                        autoFocus
+                                    />
+                                )}
+                                <i 
+                                    className='bx bx-search icon-tbl' 
+                                    onClick={() => setShowSearchInput(!showSearchInput)}
+                                    style={{ cursor: 'pointer' }}
+                                ></i>
+                                <i className='bx bx-filter icon-tbl'></i>
+                            </div>
                         </div>
                         <table>
                             <thead className="thead">
@@ -156,20 +219,20 @@ const ListPrescrire = () => {
                                     <th>Consultation</th>
                                     <th>Type prescription</th>
                                     <th>Posologie</th>
-                                    <th>Actions</th>
+                                    <th className='th'>Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="tbody">
-                                {prescriptions.length > 0 ? (
-                                    prescriptions.map((prescription) => (
+                                {filteredPrescriptions.length > 0 ? (
+                                    filteredPrescriptions.map((prescription) => (
                                         <tr key={prescription.idPrescrire}>
-                                            <td>{new Date(prescription.datePrescrire).toLocaleDateString()}</td>
+                                            <td>{formatDate(prescription.datePrescrire)}</td>
                                             <td> Consultation du &nbsp;
                                                 {prescription.prenomPatient} le  &nbsp;
-                                                {prescription.dateConsult ? new Date(prescription.dateConsult).toLocaleDateString() : 'N/A'}
+                                                {prescription.dateConsult ? formatDate(prescription.dateConsult) : 'N/A'}
                                             </td>
                                             <td>{prescription.typePrescrire}</td>
-                                            <td>{prescription.posologie}</td>
+                                            <td>{prescription.posologie || 'Pas de posologie' }</td>
                                             <td className='td-tbn-actions'>
                                                 <button 
                                                     className="edit-btn"
@@ -189,7 +252,7 @@ const ListPrescrire = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan={5} style={{ textAlign: 'center' }}>
-                                            Aucune prescription disponible
+                                            {searchTerm ? 'Aucune prescription ne correspond à votre recherche' : 'Aucune prescription disponible'}
                                         </td>
                                     </tr>
                                 )}
@@ -212,7 +275,6 @@ const ListPrescrire = () => {
                 theme="colored"
             />
 
-            {/* Dialog de confirmation de suppression */}
             <Dialog
                 open={openDeleteDialog}
                 onClose={handleCancelDelete}

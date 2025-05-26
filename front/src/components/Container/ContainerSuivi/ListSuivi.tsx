@@ -278,7 +278,7 @@ const ListSuivi = () => {
                                     <th>Praticien</th>
                                     <th>Compte rendu</th>
                                     <th>Prescription</th>
-                                    <th>Actions</th>
+                                    <th className='th'>Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="tbody">

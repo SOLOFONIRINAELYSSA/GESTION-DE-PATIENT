@@ -5,6 +5,7 @@ axios.defaults.baseURL = API_BASE_URL;
 
  export interface RendezVous {
   idRdv?: number;
+  idExamen?: number;
   cinPatient: string;
   cinPraticien: string;
   dateHeure: string;
@@ -22,6 +23,19 @@ axios.defaults.baseURL = API_BASE_URL;
     prenom: string;
     specialite?: string;
   };
+  nomPraticienParent?: string;
+  prenomPraticienParent?: string;
+  specialitePraticienParent?: string;
+}
+
+export interface RendezVousAvecExamens extends RendezVous {
+  typePrescription?: string;
+  typeExamen?: string;
+  statutExamen?: string;
+   idExamen?: number;
+   nomPraticien?: string;   
+   specialite?: string;   
+
 }
 
 export interface Notification {
@@ -126,6 +140,54 @@ export async function getAllRendezVous(): Promise<RendezVous[]> {
       throw new Error(
         error.response?.data?.error || 
         "Erreur lors de la récupération des rendez-vous"
+      );
+    }
+    throw new Error("Erreur inattendue");
+  }
+}
+
+export async function getAllRendezVousParticulier(): Promise<RendezVous[]> {
+  try {
+    const response = await axios.get<{
+
+      success: boolean;
+      count: number;
+      data: RendezVous[];
+    }>(`${API_BASE_URL}/rendezVousParticulier`);
+    
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error("Erreur lors de la récupération des rendez-vous");
+    
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.error || 
+        "Erreur lors de la récupération des rendez-vous"
+      );
+    }
+    throw new Error("Erreur inattendue");
+  }
+}
+
+// Dans services/rendezVous_api.ts
+export async function getRendezVousAvecExamens(cinPatient?: string): Promise<RendezVousAvecExamens[]> {
+  try {
+    const response = await axios.get<{
+      success: boolean;
+      data: RendezVousAvecExamens[];
+    }>(`${API_BASE_URL}/rendezVousExamen${cinPatient ? `?cinPatient=${cinPatient}` : ''}`);
+    
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error("Erreur lors de la récupération des rendez-vous avec examens");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.error || 
+        "Erreur lors de la récupération des rendez-vous avec examens"
       );
     }
     throw new Error("Erreur inattendue");
