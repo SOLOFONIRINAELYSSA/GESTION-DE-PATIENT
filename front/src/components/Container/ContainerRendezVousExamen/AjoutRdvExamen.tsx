@@ -130,20 +130,27 @@ const AjoutRdvExamen = () => {
   loadData();
 }, [location.state]);
   
-  useEffect(() => {
-    if (patientSearch.length > 1) {
-      const results = allPatients.filter(patient =>
-        patient.nom.toLowerCase().includes(patientSearch.toLowerCase()) ||
-        patient.prenom.toLowerCase().includes(patientSearch.toLowerCase()) ||
-        patient.cinPatient.toLowerCase().includes(patientSearch.toLowerCase())
-      ).slice(0, 10);
-      setPatientResults(results);
-      setShowPatientResults(results.length > 0);
-    } else {
-      setPatientResults([]);
-      setShowPatientResults(false);
-    }
-  }, [patientSearch, allPatients]);
+ useEffect(() => {
+  if (patientSearch.length > 1) {
+    // Filtrer les patients qui ont des examens dans rdvAvecExamens
+    const patientsAvecExamens = allPatients.filter(patient => 
+      rdvAvecExamens.some(rdv => rdv.cinPatient === patient.cinPatient)
+    );
+
+    // Ensuite filtrer parmi ces patients selon la recherche
+    const results = patientsAvecExamens.filter(patient =>
+      patient.nom.toLowerCase().includes(patientSearch.toLowerCase()) ||
+      patient.prenom.toLowerCase().includes(patientSearch.toLowerCase()) ||
+      patient.cinPatient.toLowerCase().includes(patientSearch.toLowerCase())
+    ).slice(0, 10);
+    
+    setPatientResults(results);
+    setShowPatientResults(results.length > 0);
+  } else {
+    setPatientResults([]);
+    setShowPatientResults(false);
+  }
+}, [patientSearch, allPatients, rdvAvecExamens]);
 
   // Recherche des praticiens référents
   const searchPraticienParents = (searchTerm: string) => {
@@ -200,19 +207,7 @@ const AjoutRdvExamen = () => {
     }
   };
 
-//   const handlePraticienSelect = (praticien: Praticien) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       cinPraticien: praticien.cinPraticien,
-//       praticienInfo: {
-//         nom: praticien.nom,
-//         prenom: praticien.prenom,
-//         ...(praticien.specialite && { specialite: praticien.specialite })
-//       }
-//     }));
-//     setPraticienSearch(`${praticien.nom} ${praticien.prenom}`);
-//     setShowPraticienResults(false);
-//   };
+
 
  const handlePraticienParentSelect = (praticien: Praticien) => {
   if (praticien.cinPraticien === formData.cinPraticien) {

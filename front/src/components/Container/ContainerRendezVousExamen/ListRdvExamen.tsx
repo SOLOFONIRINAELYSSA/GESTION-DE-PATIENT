@@ -23,10 +23,6 @@ const ListRdvExamen = () => {
   const [patients, setPatients] = useState<Record<string, string>>({});
   const [praticiens, setPraticiens] = useState<Record<string, string>>({});
 
-  // useEffect(() => {
-  //   fetchRendezVous();
-  //   loadNames();
-  // }, []);
 
   useEffect(() => {
     const loadAllData = async () => {

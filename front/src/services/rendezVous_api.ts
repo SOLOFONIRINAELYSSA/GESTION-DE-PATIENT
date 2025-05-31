@@ -35,6 +35,7 @@ export interface RendezVousAvecExamens extends RendezVous {
    idExamen?: number;
    nomPraticien?: string;   
    specialite?: string;   
+    idRdv?: number;
 
 }
 
