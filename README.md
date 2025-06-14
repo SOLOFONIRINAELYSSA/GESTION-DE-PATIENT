@@ -1,5 +1,13 @@
-## IMAGE POUR LA PAGE D'ADMINISTRATION .
-![Chargement](./README/images/1.png)
-![Chargement](./README/images/2.png)
-![Chargement](./README/images/3.png)
-![Chargement](./README/images/4.png)
+## QUELQUES IMAGES DU PROJET .
+
+Tableau de bord
+![Chargement](./README/images/patient3.png)
+
+Liste
+![Chargement](./README/images/patient1.png)
+
+Detail du rendez-vous en ettente
+![Chargement](./README/images/patient4.png)
+
+Formulaire
+![Chargement](./README/images/patient2.png)
